@@ -144,7 +144,8 @@ export async function GET(request: Request) {
             where: {
                 tenantId: tenantId,
                 status: { in: ['OPEN', 'PAID'] }
-            }
+            },
+            include: { pricingTable: true }
         })
 
         // Map to Sync format for Android
@@ -159,7 +160,7 @@ export async function GET(request: Request) {
             operatorId: t.entryOperatorId?.toString(),
             category: t.ticketType, // Corrected from t.category to t.ticketType
             type: t.vehicleType,
-            billingMode: t.billingMode,
+            billingMode: t.pricingTable?.billingMode || 'POSTPAID',
             deviceId: t.entryEquipment, // Corrected from t.deviceId
             photoUrl: t.photoUrl
         }))

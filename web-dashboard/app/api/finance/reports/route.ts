@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         }
 
         // 2. Security Check for Consolidated View
-        if (requestedId.startsWith('ALL_') && auth.payload.type !== 'ADMIN') {
+        if (requestedId.startsWith('ALL_') && auth.payload?.type !== 'ADMIN') {
             return NextResponse.json({ error: 'Acesso negado: Visão consolidada disponível apenas para Master.' }, { status: 403 })
         }
 

@@ -168,7 +168,7 @@ export default function ReportsPage() {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {currentPaymentMethods.map((entry, index) => (
+                                    {currentPaymentMethods.map((entry: any, index: number) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
@@ -193,7 +193,7 @@ export default function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {currentPaymentMethods.map((item, idx) => (
+                                {currentPaymentMethods.map((item: any, idx: number) => (
                                     <tr key={idx} className="print:text-black">
                                         <td className="py-2 flex items-center gap-2">
                                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
@@ -207,9 +207,9 @@ export default function ReportsPage() {
                                 ))}
                                 <tr className="font-bold border-t border-white/20 print:border-black print:text-black">
                                     <td className="py-3">TOTAL</td>
-                                    <td className="py-3 text-center">{currentPaymentMethods.reduce((acc, cur) => acc + (cur.count || 0), 0)}</td>
+                                    <td className="py-3 text-center">{currentPaymentMethods.reduce((acc: number, cur: any) => acc + (cur.count || 0), 0)}</td>
                                     <td className="py-3 text-right">
-                                        {currentPaymentMethods.reduce((acc, cur) => acc + (cur.value || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        {currentPaymentMethods.reduce((acc: number, cur: any) => acc + (cur.value || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </td>
                                 </tr>
                             </tbody>
@@ -236,7 +236,7 @@ export default function ReportsPage() {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {currentVehicleTypes.map((entry, index) => (
+                                    {currentVehicleTypes.map((entry: any, index: number) => (
                                         <Cell key={`cell-${index}`} fill={entry.color} />
                                     ))}
                                 </Pie>
@@ -261,7 +261,7 @@ export default function ReportsPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {currentVehicleTypes.map((item, idx) => (
+                                {currentVehicleTypes.map((item: any, idx: number) => (
                                     <tr key={idx} className="print:text-black">
                                         <td className="py-2 flex items-center gap-2">
                                             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
@@ -275,9 +275,9 @@ export default function ReportsPage() {
                                 ))}
                                 <tr className="font-bold border-t border-white/20 print:border-black print:text-black">
                                     <td className="py-3">TOTAL</td>
-                                    <td className="py-3 text-center">{currentVehicleTypes.reduce((acc, cur) => acc + (cur.count || 0), 0)}</td>
+                                    <td className="py-3 text-center">{currentVehicleTypes.reduce((acc: number, cur: any) => acc + (cur.count || 0), 0)}</td>
                                     <td className="py-3 text-right">
-                                        {currentVehicleTypes.reduce((acc, cur) => acc + (cur.value || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                        {currentVehicleTypes.reduce((acc: number, cur: any) => acc + (cur.value || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </td>
                                 </tr>
                             </tbody>

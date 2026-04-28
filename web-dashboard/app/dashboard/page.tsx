@@ -467,12 +467,12 @@ export default function Dashboard() {
                                 <div key={item.method} className="group">
                                     <div className="flex justify-between text-sm mb-2 px-1">
                                         <span className="text-gray-400 font-black uppercase tracking-widest text-[9px]">
-                                            {{
+                                            {({
                                                 'CREDIT': 'Cartão de Crédito',
                                                 'DEBIT': 'Cartão de Débito',
                                                 'CASH': 'Dinheiro',
                                                 'PIX': 'Pix'
-                                            }[item.method] || item.method}
+                                            } as Record<string, string>)[item.method] || item.method}
                                         </span>
                                         <span className="text-white font-black group-hover:text-emerald-400 transition-colors">
                                             {item.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

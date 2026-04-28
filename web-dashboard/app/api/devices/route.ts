@@ -26,7 +26,7 @@ export async function GET(request: Request) {
             const entries = await prisma.ticket.count({
                 where: {
                     tenantId: parseInt(tenantId),
-                    entryEquipment: d.deviceId,
+                    entryEquipment: d.posId || d.id.toString(),
                     entryTime: { gte: todayStart }
                 }
             })
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
             const exits = await prisma.ticket.count({
                 where: {
                     tenantId: parseInt(tenantId),
-                    exitEquipment: d.deviceId,
+                    exitEquipment: d.posId || d.id.toString(),
                     exitTime: { gte: todayStart }
                 }
             })

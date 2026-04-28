@@ -53,6 +53,11 @@ export async function POST(request: Request) {
         const diffMs = now.getTime() - entryTime.getTime()
         const minutes = Math.floor(diffMs / 60000)
 
+        // Duration String
+        const hours = Math.floor(minutes / 60)
+        const mins = minutes % 60
+        const durationStr = `${hours}h ${mins}m`
+
         // Extract vehicleType from entryMethod (e.g. MANUAL_CAR -> CAR)
         const vTypeMatch = ticket.entryMethod ? ticket.entryMethod.split('_') : []
         const vehicleType = vTypeMatch.length > 1 ? vTypeMatch[vTypeMatch.length - 1] : 'CAR'
@@ -127,10 +132,7 @@ export async function POST(request: Request) {
         }
         } // Close else for DURATION LOGIC
 
-        // Duration String
-        const hours = Math.floor(minutes / 60)
-        const mins = minutes % 60
-        const durationStr = `${hours}h ${mins}m`
+        // (Duration String logic moved up)
 
         return NextResponse.json({
             ticketId: ticket.id,

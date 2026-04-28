@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verifyAuth, validateTenantAccess } from '@/app/lib/auth'
 import { prisma } from '@/app/lib/prisma'
+import { hash } from 'bcryptjs'
 
 export async function GET(request: Request) {
     try {

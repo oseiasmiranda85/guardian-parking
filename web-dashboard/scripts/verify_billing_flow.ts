@@ -49,7 +49,7 @@ async function main() {
     // Logic from cron/billing/route.ts
     const config = await prisma.sysConfig.findUnique({ where: { id: "GLOBAL" } })
     const thresholdDate = new Date()
-    thresholdDate.setDate(new Date().getDate() - config.blockToleranceDays)
+    thresholdDate.setDate(new Date().getDate() - (config?.blockToleranceDays || 5))
 
     const overdue = await prisma.invoice.findMany({
         where: {
@@ -74,8 +74,8 @@ async function main() {
 
     // Check Block
     const subAfter = await prisma.subscription.findUnique({ where: { tenantId } })
-    console.log(`Tenant Status After Cron: ${subAfter.status}`)
-    if (subAfter.status !== 'BLOCKED') throw new Error("Tenant should be BLOCKED")
+    console.log(`Tenant Status After Cron: ${subAfter?.status}`)
+    if (subAfter?.status !== 'BLOCKED') throw new Error("Tenant should be BLOCKED")
 
     // 2. PAY INVOICE
     console.log("\n--- 2. PAYING INVOICE ---")
@@ -94,8 +94,8 @@ async function main() {
 
     // Check Unblock
     const subFinal = await prisma.subscription.findUnique({ where: { tenantId } })
-    console.log(`Tenant Status After Payment: ${subFinal.status}`)
-    if (subFinal.status !== 'ACTIVE') throw new Error("Tenant should be ACTIVE")
+    console.log(`Tenant Status After Payment: ${subFinal?.status}`)
+    if (subFinal?.status !== 'ACTIVE') throw new Error("Tenant should be ACTIVE")
 
     console.log("\n✅ BILLING FLOW VERIFIED SUCCESS")
 }
