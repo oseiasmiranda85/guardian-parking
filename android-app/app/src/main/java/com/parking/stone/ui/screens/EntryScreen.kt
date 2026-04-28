@@ -1,0 +1,502 @@
+package com.parking.stone.ui.screens
+
+import android.Manifest
+import android.util.Log
+import android.view.ViewGroup
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
+import com.parking.stone.hardware.TextAnalyzer
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.Executors
+import com.parking.stone.data.AccreditedRepository
+import com.parking.stone.data.AccreditedUser
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EntryScreen(navController: NavController) {
+    // STATE
+    var detectedPlate by remember { mutableStateOf("") }
+    var vehicleType by remember { mutableStateOf("Carro") } // Carro, Moto
+    var helmets by remember { mutableStateOf("0") }
+    var paymentMethod by remember { mutableStateOf("CREDIT") }
+    var isProcessing by remember { mutableStateOf(false) }
+    var imageCapture by remember { mutableStateOf<androidx.camera.core.ImageCapture?>(null) }
+    
+    // Plate Input State
+    var isLegacyPlate by remember { mutableStateOf(false) } // Mercosul (Default) vs Legacy
+    
+    // Accredited Flow State
+    var showQrScanner by remember { mutableStateOf(false) }
+    var accreditedUser by remember { mutableStateOf<AccreditedUser?>(null) }
+    var showAccreditedDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState() // Scrollable Form
+    
+    // Sync Config on Load
+    LaunchedEffect(Unit) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            com.parking.stone.data.XSync(com.parking.stone.data.AppDatabase.getDatabase(context).parkingDao()).syncConfig()
+        }
+    }
+
+    // --- DUPLICATE CHECK ---
+    var showDuplicateDialog by remember { mutableStateOf(false) }
+    var existingTicketId by remember { mutableStateOf<Long?>(null) }
+    
+    LaunchedEffect(detectedPlate) {
+        if (detectedPlate.length == 7) {
+            val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+            val existing = db.parkingDao().getActiveEntryByPlate(detectedPlate, com.parking.stone.data.SessionManager.tenantId)
+            if (existing != null) {
+                existingTicketId = existing.id
+                showDuplicateDialog = true
+            }
+        }
+    }
+
+    if (showDuplicateDialog) {
+        AlertDialog(
+            onDismissRequest = { showDuplicateDialog = false },
+            title = { Text("Veículo já está no pátio!") },
+            text = { Text("A placa $detectedPlate já possui um ticket aberto. Deseja realizar a SAÍDA deste veículo agora?") },
+            confirmButton = {
+                Button(onClick = { 
+                    showDuplicateDialog = false
+                    navController.navigate(com.parking.stone.ui.Routes.EXIT + "?plate=$detectedPlate")
+                }) { Text("Ir para Saída") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDuplicateDialog = false }) { Text("Continuar Entrada") }
+            }
+        )
+    }
+
+    // --- PERSONA QR SCANNER OVERLAY ---
+    if (showQrScanner) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+             CameraPreview(
+                onPlateDetected = { token -> 
+                    // Se for uma sequência numérica de 14 dígitos, tenta validar
+                    if (token.length == 14 && token.all { it.isDigit() }) {
+                        scope.launch {
+                            val repo = AccreditedRepository()
+                            val user = repo.validateQrCode(token, com.parking.stone.data.SessionManager.tenantId)
+                            if (user != null) {
+                                accreditedUser = user
+                                showQrScanner = false
+                                showAccreditedDialog = true
+                            } else {
+                                android.widget.Toast.makeText(context, "Credencial Inválida ou Inativa", android.widget.Toast.LENGTH_LONG).show()
+                                showQrScanner = false
+                            }
+                        }
+                    }
+                },
+                onCaptureReady = {}
+            )
+             Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(modifier = Modifier.size(250.dp).border(4.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)))
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Escaneie o QR Code da Persona", color = Color.White, fontWeight = FontWeight.Bold)
+                
+                Button(
+                    onClick = {
+                        scope.launch {
+                            // Simular leitura de um token real cadastrado
+                            val tokenSimulado = "00000000000000" 
+                            val repo = AccreditedRepository()
+                            val user = repo.validateQrCode(tokenSimulado, com.parking.stone.data.SessionManager.tenantId)
+                            if (user != null) {
+                                accreditedUser = user
+                                showQrScanner = false
+                                showAccreditedDialog = true
+                            } else {
+                                android.widget.Toast.makeText(context, "Credencial Inválida", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(top=32.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                ) {
+                    Text("[DEBUG] Simular Leitura 14 Dígitos")
+                }
+            }
+            IconButton(
+                onClick = { showQrScanner = false },
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+            ) {
+                Text("X", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        return
+    }
+
+    // --- ACCREDITED PLATE ENTRY DIALOG ---
+    if (showAccreditedDialog && accreditedUser != null) {
+        var plateForAccredited by remember { mutableStateOf("") }
+        
+        AlertDialog(
+            onDismissRequest = { showAccreditedDialog = false; accreditedUser = null },
+            title = { Text("Acesso Autorizado: ${accreditedUser!!.category}") },
+            text = {
+                Column {
+                    Text("Portador: ${accreditedUser!!.name}", fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Informe a Placa do Veículo:")
+                    OutlinedTextField(
+                        value = plateForAccredited,
+                        onValueChange = { plateForAccredited = it.uppercase() },
+                        placeholder = { Text("ABC1D23") },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (plateForAccredited.length >= 7) {
+                            scope.launch {
+                                val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+                                val entry = com.parking.stone.data.model.ParkingEntry(
+                                    plate = plateForAccredited,
+                                    type = "Credenciado",
+                                    entryTime = System.currentTimeMillis(),
+                                    isPaid = true,
+                                    amount = 0.0,
+                                    paymentMethod = "ISENTO",
+                                    transactionId = "ACC-${accreditedUser!!.token}",
+                                    operatorName = com.parking.stone.data.SessionManager.currentUser?.name ?: "Auto",
+                                    operatorId = com.parking.stone.data.SessionManager.currentUser?.id,
+                                    billingMode = "PREPAID",
+                                    category = "CREDENCIADO",
+                                    accreditedId = accreditedUser!!.id,
+                                    photoPath = null,
+                                    tenantId = com.parking.stone.data.SessionManager.tenantId,
+                                    deviceId = com.parking.stone.data.DeviceManager.deviceId
+                                )
+                                db.parkingDao().insertEntry(entry)
+                                
+                                val printer = com.parking.stone.hardware.ReceiptPrinter()
+                                printer.printEntryTicket("ISENTO - ${accreditedUser!!.category}", entry.plate, entry.type, "R$ 0,00", "CREDENTIAL", accreditedUser!!.name)
+
+                                showAccreditedDialog = false
+                                accreditedUser = null
+                                navController.popBackStack()
+                            }
+                        }
+                    },
+                    enabled = plateForAccredited.length >= 7
+                ) { Text("Emitir Ticket Gratuito") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAccreditedDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // --- MAIN ENTRY SCREEN ---
+    val containerShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    
+    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        // Camera Preview Section (Fixed Height)
+        Box(modifier = Modifier.weight(0.8f).fillMaxWidth()) {
+            CameraPreview(
+                onPlateDetected = { plate ->
+                    if (detectedPlate.isEmpty()) detectedPlate = plate
+                },
+                onCaptureReady = { capture -> imageCapture = capture }
+            )
+            
+            // Overlays
+            Box(
+                modifier = Modifier
+                    .size(300.dp, 100.dp)
+                    .align(Alignment.Center)
+                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+            )
+            
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+                colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Black.copy(alpha = 0.5f))
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Voltar", tint = Color.White)
+            }
+
+            FloatingActionButton(
+                onClick = { showQrScanner = true },
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+                containerColor = Color.White,
+                contentColor = Color.Black
+            ) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = "Credenciado")
+            }
+        }
+
+        // Form Section (Scrollable)
+        Column(
+            modifier = Modifier
+                .weight(1.2f) // Give more space to form
+                .fillMaxWidth()
+                .clip(containerShape)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(24.dp)
+                .verticalScroll(scrollState), // ENABLE SCROLL
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Entrada", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                
+                // Plate Mode Toggle
+                TextButton(onClick = { isLegacyPlate = !isLegacyPlate }) {
+                    Text(if(isLegacyPlate) "Padrão Antigo" else "Mercosul", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            
+            // Plate Input Row with Camera Button
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = detectedPlate,
+                    onValueChange = { 
+                         // Simple Mask Logic
+                         val clean = it.filter { c -> c.isLetterOrDigit() }.uppercase()
+                         if (clean.length <= 7) detectedPlate = clean
+                    },
+                    label = { Text(if(isLegacyPlate) "ABC-1234" else "ABC1D23") },
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Gray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    singleLine = true
+                )
+                
+                // Photo Capture Button (Icon only)
+                IconButton(
+                    onClick = { 
+                        // Mock Photo Capture or Trigger logic
+                         android.widget.Toast.makeText(context, "Foto Capturada!", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Capturar Foto", tint = Color.White)
+                }
+            }
+
+            // Vehicle Selector
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                VehicleTypeButton(text = "Carro", selected = vehicleType == "Carro", modifier = Modifier.weight(1f)) { vehicleType = "Carro" }
+                VehicleTypeButton(text = "Moto", selected = vehicleType == "Moto", modifier = Modifier.weight(1f)) { vehicleType = "Moto" }
+            }
+
+            if (vehicleType == "Moto") {
+                Text("Capacetes", color=Color.Gray, style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    VehicleTypeButton(text="1", selected = helmets == "1", modifier = Modifier.weight(1f)) { helmets = "1" }
+                    VehicleTypeButton(text="2", selected = helmets == "2", modifier = Modifier.weight(1f)) { helmets = "2" }
+                }
+            }
+
+            // Payment Method (PrePaid)
+            val isPrePaid = com.parking.stone.data.ConfigManager.paymentTiming == com.parking.stone.data.ConfigManager.PaymentTiming.ENTRY
+            if (isPrePaid) {
+                  val displayAmount = if (vehicleType == "Moto") 10.0 else 20.0
+                  
+                  Card(
+                      colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                      modifier = Modifier.fillMaxWidth()
+                  ) {
+                      Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                          Text("VALOR A PAGAR", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                          Text("R$ ${String.format("%.2f", displayAmount)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                      }
+                  }
+
+                  Text("Meio de Pagamento", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                  Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val methods = listOf("CREDIT" to "Crédito", "DEBIT" to "Débito", "PIX" to "Pix", "CASH" to "Dinheiro")
+                    methods.forEach { (methodKey, label) ->
+                        FilterChip(
+                            selected = paymentMethod == methodKey,
+                            onClick = { paymentMethod = methodKey },
+                            label = { Text(label) },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.Black)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            var showSuccessDialog by remember { mutableStateOf(false) }
+            if (showSuccessDialog) {
+                AlertDialog(
+                    onDismissRequest = { },
+                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.Green, modifier = Modifier.size(64.dp)) },
+                    title = { Text("Entrada Registrada!") },
+                    text = { Text("O ticket foi emitido e os dados estão sendo sincronizados.") },
+                    confirmButton = {
+                        Button(onClick = { 
+                            showSuccessDialog = false
+                            navController.popBackStack() 
+                        }) { Text("OK") }
+                    }
+                )
+            }
+
+            // Confirm Button
+            Button(
+                onClick = { 
+                    if (detectedPlate.isNotEmpty() && !isProcessing) {
+                        isProcessing = true
+                        val currentAmount = if (isPrePaid) (if (vehicleType == "Moto") 10.0 else 20.0) else 0.0
+                        
+                        val photoFile = java.io.File(context.filesDir, "plate_${System.currentTimeMillis()}.jpg")
+                        val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
+                        
+                        val saveAndPrint = { finalPhotoPath: String? ->
+                            scope.launch {
+                                try {
+                                    val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+                                    val entry = com.parking.stone.data.model.ParkingEntry(
+                                        plate = detectedPlate,
+                                        type = vehicleType,
+                                        helmets = if (vehicleType == "Moto") helmets.toIntOrNull() ?: 0 else 0,
+                                        entryTime = System.currentTimeMillis(),
+                                        isPaid = isPrePaid,
+                                        amount = currentAmount,
+                                        paymentMethod = if (isPrePaid) paymentMethod else null,
+                                        transactionId = if (isPrePaid) "TX-${System.currentTimeMillis()}" else null,
+                                        operatorName = com.parking.stone.data.SessionManager.currentUser?.name ?: "Desconhecido",
+                                        operatorId = com.parking.stone.data.SessionManager.currentUser?.id,
+                                        billingMode = if (isPrePaid) "PREPAID" else "POSTPAID",
+                                        category = "ROTATIVO",
+                                        photoPath = finalPhotoPath,
+                                        tenantId = com.parking.stone.data.SessionManager.tenantId,
+                                        deviceId = com.parking.stone.data.DeviceManager.deviceId
+                                    )
+                                    db.parkingDao().insertEntry(entry)
+                                    val printer = com.parking.stone.hardware.ReceiptPrinter()
+                                    printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", entry.plate, finalPhotoPath)
+                                    
+                                    // Trigger Sync (Fire and forget)
+                                    try {
+                                        val repo = com.parking.stone.data.XSync(db.parkingDao())
+                                        val result = repo.syncTickets(context)
+                                        val sessionResult = repo.syncSessions()
+                                        
+                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            if (result && sessionResult) {
+                                                android.widget.Toast.makeText(context, "Sincronizado com o Portal!", android.widget.Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                android.widget.Toast.makeText(context, "Salvo localmente (Sincronismo pendente).", android.widget.Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    } catch(e: Exception) { 
+                                        Log.e("Sync", "Auto-sync failed: ${e.message}")
+                                    }
+                                    
+                                    showSuccessDialog = true
+                                } catch(e: Exception) {
+                                    Log.e("Entry", "Save failed: ${e.message}")
+                                    android.widget.Toast.makeText(context, "Erro ao salvar: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                                isProcessing = false
+                            }
+                        }
+
+                        if (imageCapture != null) {
+                            imageCapture!!.takePicture(
+                                outputOptions,
+                                androidx.core.content.ContextCompat.getMainExecutor(context),
+                                object : androidx.camera.core.ImageCapture.OnImageSavedCallback {
+                                    override fun onImageSaved(output: androidx.camera.core.ImageCapture.OutputFileResults) {
+                                        saveAndPrint(photoFile.absolutePath)
+                                    }
+                                    override fun onError(exc: androidx.camera.core.ImageCaptureException) {
+                                        Log.e("Camera", "Photo failed: ${exc.message}")
+                                        saveAndPrint(null)
+                                    }
+                                }
+                            )
+                        } else {
+                            saveAndPrint(null)
+                        }
+                    }
+                },
+                enabled = !isProcessing && detectedPlate.length >= 7,
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.Black)
+            ) {
+                if (isProcessing) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                else Text("CONFIRMAR ENTRADA", fontWeight = FontWeight.Bold)
+            }
+            
+            // Extra spacing for scroll
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun VehicleTypeButton(text: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(50.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent,
+            contentColor = if (selected) MaterialTheme.colorScheme.primary else Color.Gray
+        ),
+        border = if (selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) 
+                 else androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+    ) { 
+        Text(text, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) 
+    }
+}
+
+

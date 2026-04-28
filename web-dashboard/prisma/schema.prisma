@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SysAdmin {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model SysConfig {
+  id                 String   @id
+  blockToleranceDays Int      @default(5)
+  penaltyRate        Float    @default(0.02)
+  interestRate       Float    @default(0.01)
+  updatedAt          DateTime @updatedAt
+}
+
+model Owner {
+  id        Int      @id @default(autoincrement())
+  name      String
+  document  String   @unique
+  email     String   @unique
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenants   Tenant[]
+}
+
+model Tenant {
+  id                   Int                   @id @default(autoincrement())
+  name                 String
+  cnpj                 String?
+  address              String?
+  totalSpots           Int                   @default(50)
+  ownerId              Int
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  latitude             Float?
+  longitude            Float?
+  accreditedCategories AccreditedCategory[]
+  accreditedPersonas   AccreditedPersona[]
+  cashSessions         CashSession[]
+  devices              Device[]
+  integrations         ExternalIntegration[]
+  invoices             Invoice[]
+  pricingTables        PricingTable[]
+  subscription         Subscription?
+  owner                Owner                 @relation(fields: [ownerId], references: [id])
+  users                TenantUser[]
+  tickets              Ticket[]
+  transactions         Transaction[]
+  vehicles             Vehicle[]
+}
+
+model Subscription {
+  id         Int       @id @default(autoincrement())
+  tenantId   Int       @unique
+  type       String
+  status     String
+  value      Float?
+  validUntil DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+}
+
+model Invoice {
+  id             Int       @id @default(autoincrement())
+  tenantId       Int
+  amount         Float
+  referenceMonth String
+  dueDate        DateTime
+  status         String
+  paidAt         DateTime?
+  penalty        Float     @default(0)
+  interest       Float     @default(0)
+  finalAmount    Float?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+}
+
+model TenantUser {
+  id              Int           @id @default(autoincrement())
+  tenantId        Int
+  name            String
+  username        String
+  password        String
+  pin             String?       // PIN de 4 a 6 dígitos para operações rápidas no POS
+  role            String
+  createdAt       DateTime      @default(now())
+  cashSessions    CashSession[]
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  operatedExits   Ticket[]      @relation("ExitOperator")
+  operatedEntries Ticket[]      @relation("EntryOperator")
+  transactions    Transaction[]
+}
+
+model Device {
+  id          Int       @id @default(autoincrement())
+  tenantId    Int
+  name        String
+  posId       String?   // Formato POS-XXXXXXXX gerado pelo Android ID
+  ipAddress   String?
+  macAddress  String?
+  type        String
+  status      String
+  lastPing    DateTime?
+  lastSeen    DateTime?
+  opsToday    Int       @default(0)
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+}
+
+model Vehicle {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int
+  plate      String
+  model      String?
+  color      String?
+  ownerName  String?
+  ownerPhone String?
+  type       String
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model AccreditedCategory {
+  id        Int                 @id @default(autoincrement())
+  tenantId  Int
+  name      String
+  createdAt DateTime            @default(now())
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
+  personas  AccreditedPersona[]
+}
+
+model AccreditedPersona {
+  id         Int                @id @default(autoincrement())
+  tenantId   Int
+  name       String
+  categoryId Int
+  token      String             @unique
+  externalId String?            @unique
+  status     String             @default("ACTIVE")
+  validUntil DateTime
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  category   AccreditedCategory @relation(fields: [categoryId], references: [id])
+  tenant     Tenant             @relation(fields: [tenantId], references: [id])
+}
+
+model Ticket {
+  id              Int           @id @default(autoincrement())
+  tenantId        Int
+  plate           String?
+  localId         String?       @unique // ID único do App Android (UUID)
+  entryTime       DateTime      @default(now())
+  exitTime        DateTime?
+  entryOperatorId Int?
+  exitOperatorId  Int?
+  status          String
+  helmetCount     Int?          @default(0)
+  entryMethod     String?
+  ticketType      String?       @default("ROTATIVO")
+  accreditedId    String?
+  pricingTableId  Int?
+  amountDue       Float?
+  amountPaid      Float?
+  entryEquipment  String?       // ID do terminal POS de entrada (ex: POS-16A44047)
+  exitEquipment   String?       // ID do terminal POS de saída
+  vehicleType     String?       @default("CAR") // CAR, MOTORCYCLE, etc.
+  photoUrl        String?
+  updatedAt       DateTime      @default(now()) @updatedAt
+  exitOperator    TenantUser?   @relation("ExitOperator", fields: [exitOperatorId], references: [id])
+  entryOperator   TenantUser?   @relation("EntryOperator", fields: [entryOperatorId], references: [id])
+  pricingTable    PricingTable? @relation(fields: [pricingTableId], references: [id])
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  transactions    Transaction[]
+}
+
+model PricingTable {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int
+  name        String
+  vehicleType String        @default("CAR")
+  type        String        @default("DURATION")
+  billingMode String        @default("POSTPAID")
+  isActive    Boolean       @default(false)
+  slots       PricingSlot[]
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+  tickets     Ticket[]
+}
+
+model PricingSlot {
+  id         Int          @id @default(autoincrement())
+  tableId    Int
+  minMinutes Int          @default(0)
+  maxMinutes Int          @default(0)
+  startTime  String?
+  endTime    String?
+  price      Float
+  table      PricingTable @relation(fields: [tableId], references: [id])
+}
+
+model Transaction {
+  id         Int         @id @default(autoincrement())
+  tenantId   Int
+  ticketId   Int?
+  amount     Float
+  method     String
+  operatorId Int?
+  createdAt  DateTime    @default(now())
+  operator   TenantUser? @relation(fields: [operatorId], references: [id])
+  ticket     Ticket?     @relation(fields: [ticketId], references: [id])
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+}
+
+model CashSession {
+  id             String     @id
+  tenantId       Int
+  userId         Int
+  deviceId       String?    // ID do terminal onde o caixa foi aberto
+  startTime      DateTime
+  endTime        DateTime?
+  startBalance   Float      @default(0)
+  closingBalance Float?
+  totalRevenue   Float?
+  status         String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  user           TenantUser @relation(fields: [userId], references: [id])
+  tenant         Tenant     @relation(fields: [tenantId], references: [id])
+}
+
+model ExternalIntegration {
+  id        Int       @id @default(autoincrement())
+  tenantId  Int?
+  name      String
+  type      String
+  targetUrl String?
+  apiKey    String?
+  status    String    @default("ACTIVE")
+  lastSync  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+}
