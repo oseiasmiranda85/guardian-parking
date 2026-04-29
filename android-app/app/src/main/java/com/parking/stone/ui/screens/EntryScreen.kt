@@ -77,6 +77,15 @@ fun EntryScreen(navController: NavController) {
     var showDuplicateDialog by remember { mutableStateOf(false) }
     var existingTicketId by remember { mutableStateOf<Long?>(null) }
     
+    // Auto-detect Plate Pattern
+    LaunchedEffect(detectedPlate) {
+        if (detectedPlate.length >= 5) {
+            val char4 = detectedPlate[4]
+            if (char4.isDigit()) isLegacyPlate = true
+            else if (char4.isLetter()) isLegacyPlate = false
+        }
+    }
+
     LaunchedEffect(detectedPlate) {
         if (detectedPlate.length == 7) {
             val db = com.parking.stone.data.AppDatabase.getDatabase(context)
@@ -296,12 +305,21 @@ fun EntryScreen(navController: NavController) {
                 OutlinedTextField(
                     value = detectedPlate,
                     onValueChange = { 
-                         // Simple Mask Logic
                          val clean = it.filter { c -> c.isLetterOrDigit() }.uppercase()
                          if (clean.length <= 7) detectedPlate = clean
                     },
-                    label = { Text(if(isLegacyPlate) "ABC-1234" else "ABC1D23") },
+                    label = { Text(if(isLegacyPlate) "Placa (AAA-9999)" else "Placa (ABC1D23)") },
                     modifier = Modifier.weight(1f),
+                    visualTransformation = if (isLegacyPlate && detectedPlate.length > 3) {
+                        androidx.compose.ui.text.input.VisualTransformation { text ->
+                            val out = text.text.substring(0, 3) + "-" + text.text.substring(3)
+                            val offsetMapping = object : androidx.compose.ui.text.input.OffsetMapping {
+                                override fun originalToTransformed(offset: Int): Int = if (offset <= 3) offset else offset + 1
+                                override fun transformedToOriginal(offset: Int): Int = if (offset <= 3) offset else offset - 1
+                            }
+                            androidx.compose.ui.text.input.TransformedText(androidx.compose.ui.text.AnnotatedString(out), offsetMapping)
+                        }
+                    } else androidx.compose.ui.text.input.VisualTransformation.None,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = Color.Gray,

@@ -38,35 +38,43 @@ class TextAnalyzer(
     }
 
     private fun processText(text: Text) {
-        // Try block by block first (concatenating lines for 2-line plates)
+        // 1. Try to find plates in single lines or blocks
         for (block in text.textBlocks) {
-            val blockText = block.lines.joinToString("") { it.text }
-            val foundPlate = extractPlate(blockText)
-            if (foundPlate != null) {
-                onTextFound(foundPlate)
+            for (line in block.lines) {
+                val found = extractPlate(line.text)
+                if (found != null) {
+                    onTextFound(found)
+                    return
+                }
+            }
+            // Try joining lines in a block (useful for 2-line moto plates)
+            val joinedBlock = block.lines.joinToString("") { it.text }
+            val foundInBlock = extractPlate(joinedBlock)
+            if (foundInBlock != null) {
+                onTextFound(foundInBlock)
                 return
             }
         }
         
-        // Fallback: search in the entire recognized text
-        val fullText = text.text.replace("\n", "")
-        val foundFull = extractPlate(fullText)
-        if (foundFull != null) {
-            onTextFound(foundFull)
+        // 2. Global search: combine all text and search for 7-char sequences
+        val allText = text.text.replace("\n", "").replace(" ", "").uppercase()
+        val foundGlobal = extractPlate(allText)
+        if (foundGlobal != null) {
+            onTextFound(foundGlobal)
         }
     }
 
     private fun extractPlate(text: String): String? {
-        // 1. Radical Cleaning: Keep ONLY A-Z and 0-9
+        // Radical Cleaning: Keep ONLY A-Z and 0-9
         val cleaned = text.uppercase().filter { it.isLetterOrDigit() }
-
-        // 2. Regex for Brazilian plates (Legacy & Mercosul)
-        val platePattern = "[A-Z0-9]{7}".toRegex()
         
-        // Find 7-char sequences and apply heuristics
-        val matches = platePattern.findAll(cleaned)
-        for (match in matches) {
-            val corrected = applyHeuristics(match.value)
+        // We look for 7 characters. If it has 8, maybe it captured a hyphen as a character or extra noise
+        if (cleaned.length < 7) return null
+
+        // Sliding window to find a valid 7-char sequence
+        for (i in 0..(cleaned.length - 7)) {
+            val candidate = cleaned.substring(i, i + 7)
+            val corrected = applyHeuristics(candidate)
             if (isValidPlate(corrected)) return corrected
         }
         
@@ -77,45 +85,64 @@ class TextAnalyzer(
         if (plate.length != 7) return plate
         val chars = plate.toCharArray()
         
-        // Position 0, 1, 2: MUST BE LETTERS
+        // POS 0, 1, 2: ALWAYS LETTERS
         for (i in 0..2) {
-            chars[i] = when (chars[i]) {
-                '0' -> 'O'
-                '1' -> 'I'
-                '2' -> 'Z'
-                '4' -> 'A'
-                '5' -> 'S'
-                '8' -> 'B'
-                else -> chars[i]
-            }
+            chars[i] = charToLetter(chars[i])
         }
         
-        // Position 3, 5, 6: MUST BE DIGITS
-        val digitPositions = listOf(3, 5, 6)
-        for (i in digitPositions) {
-            chars[i] = when (chars[i]) {
-                'O' -> '0'
-                'I' -> '1'
-                'Z' -> '2'
-                'A' -> '4'
-                'S' -> '5'
-                'B' -> '8'
-                'G' -> '6'
-                'T' -> '7'
-                else -> chars[i]
-            }
-        }
+        // POS 3: ALWAYS DIGIT
+        chars[3] = charToDigit(chars[3])
         
-        // Position 4: Can be Digit (Legacy) or Letter (Mercosul)
-        // No radical swap here unless we detect a clear pattern
+        // POS 4: LETTER (Mercosul) or DIGIT (Legacy)
+        // Heuristics for POS 4: 
+        // If POS 5 & 6 are digits, and POS 4 is a digit -> Legacy
+        // If POS 5 & 6 are digits, and POS 4 is a letter -> Mercosul
+        // This is tricky, we leave it as is unless it's a very common mistake
+        if (chars[4] == '0') { 
+             // 0 is often used in both, but if it's Mercosul it should be 'O'
+             // Most Mercosul plates have a letter here.
+        }
+
+        // POS 5, 6: ALWAYS DIGITS
+        for (i in 5..6) {
+            chars[i] = charToDigit(chars[i])
+        }
         
         return String(chars)
     }
 
+    private fun charToLetter(c: Char): Char = when (c) {
+        '0' -> 'O'
+        '1' -> 'I'
+        '2' -> 'Z'
+        '4' -> 'A'
+        '5' -> 'S'
+        '8' -> 'B'
+        '6' -> 'G'
+        else -> c
+    }
+
+    private fun charToDigit(c: Char): Char = when (c) {
+        'O' -> '0'
+        'I' -> '1'
+        'Z' -> '2'
+        'A' -> '4'
+        'S' -> '5'
+        'B' -> '8'
+        'G' -> '6'
+        'T' -> '7'
+        'Q' -> '0'
+        'D' -> '0'
+        else -> c
+    }
+
     private fun isValidPlate(plate: String): Boolean {
-        // Final check: LLL N (L/N) NN
-        val pattern = "^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$".toRegex()
-        return pattern.matches(plate)
+        // Pattern 1: Legacy (AAA-9999) -> AAA9999
+        val legacyPattern = "^[A-Z]{3}[0-9]{4}$".toRegex()
+        // Pattern 2: Mercosul (AAA9A99)
+        val mercosulPattern = "^[A-Z]{3}[0-9][A-Z][0-9]{2}$".toRegex()
+        
+        return legacyPattern.matches(plate) || mercosulPattern.matches(plate)
     }
 
     companion object {
