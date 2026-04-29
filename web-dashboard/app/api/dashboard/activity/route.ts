@@ -38,7 +38,7 @@ export async function GET(request: Request) {
             plate: t.plate || 'N/A',
             // Simple inference for now since we lack direct relation in this context
             type: t.pricingTableId ? 'Tabelado' : 'Rotativo',
-            time: new Date(t.entryTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            time: new Date(t.entryTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }),
             status: t.status,
             amount: t.amountPaid !== null ? t.amountPaid : (t.amountDue || 0)
         }))
