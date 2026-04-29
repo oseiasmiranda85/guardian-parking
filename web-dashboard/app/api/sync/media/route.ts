@@ -27,11 +27,10 @@ export async function POST(request: Request) {
         const buffer = Buffer.from(bytes)
 
         // Ensure Directory Exists
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', tenantId)
+        const uploadDir = path.join(process.cwd(), 'storage', 'uploads', tenantId)
         await mkdir(uploadDir, { recursive: true })
 
         // Save File
-        // Filename: [uuid].jpg (Cleaner and unique)
         const filename = uuid ? `${uuid}.jpg` : `${plate}_${entryTime}.jpg`
         const filePath = path.join(uploadDir, filename)
         await writeFile(filePath, buffer)
