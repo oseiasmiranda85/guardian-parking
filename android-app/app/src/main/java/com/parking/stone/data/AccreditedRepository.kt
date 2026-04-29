@@ -17,7 +17,7 @@ data class AccreditedUser(
 
 class AccreditedRepository {
     private val client = OkHttpClient()
-    private val BASE_URL = "http://192.168.10.5:3000/api/accredited/validate"
+    private val BASE_URL = "https://guardian-portal-h651.onrender.com/api/accredited/validate"
 
     suspend fun validateQrCode(token: String, tenantId: Int): AccreditedUser? = withContext(Dispatchers.IO) {
         try {
