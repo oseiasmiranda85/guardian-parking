@@ -4,6 +4,7 @@ import { prisma } from '../../../../lib/prisma'
 export async function POST(req: Request) {
   try {
     const data = await req.json()
+    console.log('🖨️ Recebendo impressão virtual:', JSON.stringify(data, null, 2))
     
     // Validar se temos o tenantId
     // Nota: Em uma versão real, usaríamos o tenantId da sessão ou do header
