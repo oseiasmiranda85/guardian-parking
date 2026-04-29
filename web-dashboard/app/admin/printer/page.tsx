@@ -57,8 +57,8 @@ function MonitorContent() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4 text-center">
         <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold">Acesso Restrito</h1>
-        <p className="text-muted-foreground mt-2">Esta ferramenta é temporária e requer uma chave de autorização.</p>
+        <h1 className="text-2xl font-bold text-slate-900">Acesso Restrito</h1>
+        <p className="text-slate-600 mt-2 font-medium">Esta ferramenta é temporária e requer uma chave de autorização.</p>
       </div>
     )
   }
@@ -67,11 +67,11 @@ function MonitorContent() {
     try {
       const data = JSON.parse(jsonStr)
       return (
-        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-slate-950">
+        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-[#000000] [!important]">
           {data.steps?.map((step: any, i: number) => {
             if (step.type === 'IMAGE') return <div key={i} className="flex justify-center py-2"><Printer className="w-8 h-8 text-slate-300" /></div>
             if (step.type === 'SPACE') return <div key={i} className="h-2" />
-            if (step.type === 'QRCODE') return <div key={i} className="flex justify-center py-2 border border-dashed border-slate-200 bg-slate-50"> [QR CODE: {step.data}] </div>
+            if (step.type === 'QRCODE') return <div key={i} className="flex justify-center py-2 border border-dashed border-slate-300 bg-slate-50 text-black font-bold"> [QR CODE: {step.data}] </div>
             if (step.type === 'TEXT') {
               return (
                 <div 
@@ -87,33 +87,33 @@ function MonitorContent() {
         </div>
       )
     } catch (e) {
-      return <pre className="text-xs text-red-500">{jsonStr}</pre>
+      return <pre className="text-xs text-red-600 font-bold">{jsonStr}</pre>
     }
   }
 
   return (
-    <div className="p-8 bg-slate-100 min-h-screen text-slate-900">
+    <div className="p-8 bg-[#f1f5f9] min-h-screen text-[#0f172a] [!important]">
       <div className="flex justify-between items-center mb-8 max-w-6xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2 text-blue-700">
+          <h1 className="text-3xl font-black flex items-center gap-2 text-[#1e40af] [!important]">
             <span>🤖</span> Monitor de Impressão Virtual
           </h1>
-          <p className="text-slate-600">Os tickets gerados no terminal POS aparecem aqui em tempo real.</p>
+          <p className="text-[#475569] font-medium [!important]">Os tickets gerados no terminal POS aparecem aqui em tempo real.</p>
         </div>
         <div className="flex gap-3 items-center">
           <button 
             onClick={clearHistory}
-            className="p-2.5 bg-white hover:bg-red-50 text-red-500 rounded-lg border shadow-sm transition-all"
+            className="p-2.5 bg-white hover:bg-red-100 text-red-600 rounded-lg border-2 border-red-100 shadow-md transition-all"
             title="Limpar Histórico"
           >
             <Trash2 className="w-5 h-5" />
           </button>
-          <div className="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-100 text-green-800 border border-green-200 shadow-sm">
+          <div className="px-4 py-2 rounded-lg text-xs font-black bg-green-600 text-white shadow-lg">
             ONLINE
           </div>
           <button 
             onClick={fetchTickets} 
-            className="p-2.5 bg-white hover:bg-blue-50 text-blue-600 rounded-lg border shadow-sm transition-all"
+            className="p-2.5 bg-white hover:bg-blue-100 text-blue-700 rounded-lg border-2 border-blue-100 shadow-md transition-all"
           >
             <RefreshCcw className="w-5 h-5" />
           </button>
@@ -121,34 +121,32 @@ function MonitorContent() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-12 italic text-slate-500">Carregando bobina...</div>
+        <div className="flex justify-center p-12 italic text-[#64748b] font-bold text-xl [!important]">Carregando bobina...</div>
       ) : (
-        <div className="flex overflow-x-auto gap-8 pb-8 snap-x max-w-full mx-auto px-4">
+        <div className="flex overflow-x-auto gap-8 pb-12 snap-x max-w-full mx-auto px-4">
           {tickets.map((t) => (
-            <div key={t.id} className="snap-start min-w-[300px] max-w-[300px] transition-transform hover:-translate-y-1">
-              <div className="bg-white shadow-2xl rounded-t-xl border-x border-t p-8 relative min-h-[450px]">
-                {/* Paper cut effect */}
+            <div key={t.id} className="snap-start min-w-[320px] max-w-[320px] transition-transform hover:-translate-y-2">
+              <div className="bg-[#ffffff] shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-t-2xl border-x-2 border-t-2 border-slate-200 p-10 relative min-h-[500px]">
                 <div className="absolute -top-1 left-0 right-0 h-1 bg-white" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }} />
-                
                 {renderTicketContent(t.content)}
               </div>
-              <div className="bg-white border-x border-b p-4 rounded-b-xl text-[10px] shadow-lg">
-                <div className="flex justify-between font-bold text-slate-500 border-b pb-2 mb-2">
+              <div className="bg-slate-800 border-x-2 border-b-2 border-slate-800 p-5 rounded-b-2xl shadow-2xl">
+                <div className="flex justify-between font-black text-white border-b border-slate-600 pb-3 mb-3 text-[11px]">
                   <span>ID: {t.id.slice(-8).toUpperCase()}</span>
                   <span>{new Date(t.createdAt).toLocaleString('pt-BR')}</span>
                 </div>
-                <div className="flex justify-between items-center opacity-80 text-slate-400">
-                  <span>TERMINAL:</span>
-                  <span className="font-mono">{t.deviceId}</span>
+                <div className="flex justify-between items-center text-slate-300 text-[10px]">
+                  <span className="font-bold">TERMINAL:</span>
+                  <span className="font-mono bg-slate-700 px-2 py-0.5 rounded">{t.deviceId}</span>
                 </div>
               </div>
             </div>
           ))}
           
           {tickets.length === 0 && (
-            <div className="flex flex-col items-center justify-center w-full p-20 border-2 border-dashed rounded-xl opacity-40">
-              <Printer className="w-12 h-12 mb-4 text-slate-400" />
-              <p className="text-slate-500">Nenhuma impressão detectada recentemente.</p>
+            <div className="flex flex-col items-center justify-center w-full p-32 border-4 border-dashed border-slate-300 rounded-3xl bg-white/50 shadow-inner">
+              <Printer className="w-20 h-20 mb-6 text-slate-300" />
+              <p className="text-slate-500 text-xl font-bold">Aguardando primeira impressão...</p>
             </div>
           )}
         </div>
@@ -159,7 +157,7 @@ function MonitorContent() {
 
 export default function PrinterMonitor() {
   return (
-    <Suspense fallback={<div className="p-12 text-center italic">Carregando Monitor...</div>}>
+    <Suspense fallback={<div className="p-12 text-center italic font-bold">Carregando Monitor...</div>}>
       <MonitorContent />
     </Suspense>
   )
