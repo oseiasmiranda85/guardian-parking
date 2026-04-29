@@ -104,6 +104,13 @@ class XSync(private val dao: ParkingDao) {
                 operatorId = user.id
             )
             val response = NetworkModule.api.syncDevice("Bearer $token", tenantId.toString(), heartbeat)
+            
+            // Sync remote config
+            response.config?.let { config ->
+                ConfigManager.requireExitTicket = config.requireExitTicket
+                Log.d("XSync", "Config synced from Portal: requireExitTicket=${config.requireExitTicket}")
+            }
+            
             Log.d("XSync", "Device heartbeat: ${DeviceManager.deviceId} operator=${user.name} -> success=${response.success}")
             response.success
         } catch (e: Exception) {

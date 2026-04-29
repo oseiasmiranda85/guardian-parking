@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.parking.stone.ParkingApp
+import com.parking.stone.data.SessionManager
 
 // Mocking Stone Printer SDK
 class ReceiptPrinter {
@@ -48,7 +49,8 @@ class ReceiptPrinter {
         amount: String,
         method: String,
         qrContent: String,
-        photoPath: String? = null
+        photoPath: String? = null,
+        helmetCount: Int = 0
     ): Boolean {
         val timestamp = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         val isMonthly = eventName.contains("MENSALISTA") || eventName.contains("CREDENCIADO") || method == "CREDENTIAL"
@@ -108,6 +110,14 @@ class ReceiptPrinter {
             details.append(String.format("DATA:    %s\n", timestamp))
             details.append(String.format("VEICULO: %s\n", type))
             details.append(String.format("PLACA:   %s\n", plate))
+            
+            val opName = SessionManager.currentUser?.name?.uppercase() ?: "SISTEMA"
+            details.append(String.format("OPERADOR: %s\n", opName))
+
+            if (type.uppercase().contains("MOTO") && helmetCount > 0) {
+                details.append(String.format("CAPACETES: %d\n", helmetCount))
+            }
+            
             details.append(String.format("VALOR:   %s\n", amount))
             
             val statusLabel = when {

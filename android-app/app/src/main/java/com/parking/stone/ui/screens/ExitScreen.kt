@@ -137,7 +137,9 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                                 exitDeviceId = com.parking.stone.data.DeviceManager.deviceId
                                             )
                                             db.parkingDao().updateEntry(updated)
-                                            ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
+                                            if (com.parking.stone.data.ConfigManager.requireExitTicket) {
+                                                ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
+                                            }
                                             
                                             withContext(Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
                                             recentEntries = db.parkingDao().getActiveEntries(SessionManager.tenantId)
@@ -440,7 +442,9 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                              exitDeviceId = com.parking.stone.data.DeviceManager.deviceId
                                          )
                                          db.parkingDao().updateEntry(updated)
-                                         ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(if(foundEntry!!.isPaid) foundEntry!!.amount else calculatedFee), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
+                                         if (com.parking.stone.data.ConfigManager.requireExitTicket) {
+                                             ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(if(foundEntry!!.isPaid) foundEntry!!.amount else calculatedFee), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
+                                         }
                                      }
                                      
                                      launch(Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }

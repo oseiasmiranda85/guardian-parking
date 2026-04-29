@@ -12,6 +12,9 @@ object ConfigManager {
     // Change this to PaymentTiming.ENTRY to test the "Pre-Paid" flow
     var paymentTiming by androidx.compose.runtime.mutableStateOf(PaymentTiming.ENTRY)
     
+    // Printer Configuration
+    var requireExitTicket: Boolean by androidx.compose.runtime.mutableStateOf(true)
+
     // Search Configuration
     var allowPlateSearch: Boolean = true
     var allowTicketIdSearch: Boolean = true

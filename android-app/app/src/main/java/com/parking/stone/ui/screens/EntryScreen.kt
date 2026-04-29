@@ -481,7 +481,7 @@ fun EntryScreen(navController: NavController) {
                                     )
                                     db.parkingDao().insertEntry(entry)
                                     val printer = com.parking.stone.hardware.ReceiptPrinter()
-                                    printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", entry.plate, finalPhotoPath)
+                                    printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", entry.plate, finalPhotoPath, entry.helmets)
                                     
                                     // Trigger Sync (Fire and forget)
                                     try {
