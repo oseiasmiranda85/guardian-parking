@@ -15,18 +15,24 @@ class ReceiptPrinter {
             )
             for (robotUrl in targets) {
                 try {
+                    android.util.Log.d("Printer", "Enviando para: $robotUrl")
                     val url = java.net.URL(robotUrl)
                     val conn = url.openConnection() as java.net.HttpURLConnection
-                    conn.connectTimeout = 1000
+                    conn.connectTimeout = 5000
+                    conn.readTimeout = 5000
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.doOutput = true
                     
                     conn.outputStream.use { it.write(json.toByteArray()) }
-                    if (conn.responseCode == 200) {
+                    val code = conn.responseCode
+                    android.util.Log.d("Printer", "Resposta: $code")
+                    if (code in 200..299) {
                         break
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    android.util.Log.e("Printer", "Erro ao enviar para $robotUrl: ${e.message}")
+                }
             }
         }.start()
     }
