@@ -80,8 +80,14 @@ class ReceiptPrinter {
                 if (file.exists()) {
                     val bytes = file.readBytes()
                     val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    
+                    // Rotação de 90 graus para corrigir orientação do POS
+                    val matrix = android.graphics.Matrix()
+                    matrix.postRotate(90f)
+                    val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                    
                     val out = java.io.ByteArrayOutputStream()
-                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 40, out) 
+                    rotatedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 40, out) 
                     val base64 = android.util.Base64.encodeToString(out.toByteArray(), android.util.Base64.NO_WRAP)
                     
                     // Simulating: printer.printImage(photo)
