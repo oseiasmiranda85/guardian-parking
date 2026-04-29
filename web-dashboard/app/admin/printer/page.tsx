@@ -69,9 +69,27 @@ function MonitorContent() {
       return (
         <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-[#000000] [!important]">
           {data.steps?.map((step: any, i: number) => {
-            if (step.type === 'IMAGE') return <div key={i} className="flex justify-center py-2"><Printer className="w-8 h-8 text-slate-300" /></div>
+            if (step.type === 'IMAGE') {
+              const src = step.base64 === 'LOGO' 
+                ? 'https://raw.githubusercontent.com/oseiasmiranda85/guardian-parking/main/web-dashboard/public/logo-guardian.png' // URL do seu logo se existir
+                : step.base64
+              
+              return (
+                <div key={i} className="flex justify-center py-2">
+                  <img src={src} className={`${step.fullWidth ? 'w-full' : 'w-24'} h-auto object-contain bg-slate-50`} alt="Ticket Image" />
+                </div>
+              )
+            }
             if (step.type === 'SPACE') return <div key={i} className="h-2" />
-            if (step.type === 'QRCODE') return <div key={i} className="flex justify-center py-2 border border-dashed border-slate-300 bg-slate-50 text-black font-bold"> [QR CODE: {step.data}] </div>
+            if (step.type === 'QRCODE') {
+              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(step.data)}`
+              return (
+                <div key={i} className="flex flex-col items-center justify-center py-4 gap-2">
+                  <img src={qrUrl} className="w-32 h-32 border-4 border-white shadow-sm" alt="QR Code" />
+                  <span className="text-[9px] opacity-50">{step.data}</span>
+                </div>
+              )
+            }
             if (step.type === 'TEXT') {
               return (
                 <div 
