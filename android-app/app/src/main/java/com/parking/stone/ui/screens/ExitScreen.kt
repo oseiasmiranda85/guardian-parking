@@ -306,7 +306,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                     val photoModel = if (foundEntry!!.photoPath != null && java.io.File(foundEntry!!.photoPath!!).exists()) {
                         foundEntry!!.photoPath
                     } else if (foundEntry!!.photoUrl != null) {
-                        "http://192.168.10.5:8080${foundEntry!!.photoUrl}"
+                        com.parking.stone.data.NetworkModule.BASE_URL.removeSuffix("/") + foundEntry!!.photoUrl
                     } else {
                         null
                     }

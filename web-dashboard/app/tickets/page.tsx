@@ -559,11 +559,19 @@ export default function TicketsPage() {
                                 </h3>
                                 <div className="aspect-video bg-black rounded-lg border border-white/10 overflow-hidden relative mb-4">
                                     {/* Simulated Image from URL */}
-                                    <div className="absolute inset-0 flex items-center justify-center text-gray-600 bg-stone-950">
-                                        [FOTO DA PLACA: {selectedTicket.plate}]
-                                        <br />
-                                        {selectedTicket.photoUrl}
-                                    </div>
+                                    {selectedTicket.photoUrl ? (
+                                        <img 
+                                            src={selectedTicket.photoUrl} 
+                                            alt={`Foto da Placa ${selectedTicket.plate}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600 bg-stone-950 p-4 text-center">
+                                            <Camera className="w-8 h-8 mb-2 opacity-20" />
+                                            <span className="text-xs uppercase font-bold tracking-widest">[SEM FOTO REGISTRADA]</span>
+                                            <span className="text-[10px] opacity-50 mt-1">Placa: {selectedTicket.plate}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-3 bg-white/5 rounded-lg border border-white/5">
