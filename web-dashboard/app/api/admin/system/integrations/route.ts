@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 
         // Real check for Accredited Service
         try {
-            await prisma.accredited.count()
+            await prisma.accreditedPersona.count()
             internalServices[2].status = 'UP'
         } catch (e) { internalServices[2].status = 'DOWN' }
 
