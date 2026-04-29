@@ -66,44 +66,63 @@ function MonitorContent() {
   const renderTicketContent = (jsonStr: string) => {
     try {
       const data = JSON.parse(jsonStr)
-      return (
-        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-[#000000] [!important]">
-          {data.steps?.map((step: any, i: number) => {
-            if (step.type === 'IMAGE') {
-              const src = step.base64 === 'LOGO' 
-                ? 'https://raw.githubusercontent.com/oseiasmiranda85/guardian-parking/main/web-dashboard/public/logo-guardian.png' // URL do seu logo se existir
-                : step.base64
-              
-              return (
-                <div key={i} className="flex justify-center py-2">
-                  <img src={src} className={`${step.fullWidth ? 'w-full' : 'w-24'} h-auto object-contain bg-slate-50`} alt="Ticket Image" />
-                </div>
-              )
-            }
-            if (step.type === 'SPACE') return <div key={i} className="h-2" />
-            if (step.type === 'QRCODE') {
-              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(step.data)}`
-              return (
-                <div key={i} className="flex flex-col items-center justify-center py-4 gap-2">
-                  <img src={qrUrl} className="w-32 h-32 border-4 border-white shadow-sm" alt="QR Code" />
-                  <span className="text-[9px] opacity-50">{step.data}</span>
-                </div>
-              )
-            }
-            if (step.type === 'TEXT') {
-              return (
-                <div 
-                  key={i} 
-                  className={`whitespace-pre-wrap ${step.align === 'CENTER' ? 'text-center' : 'text-left'} ${step.isBold ? 'font-bold' : ''}`}
-                >
-                  {step.text}
-                </div>
-              )
-            }
-            return null
-          })}
-        </div>
-      )
+      
+      // Se tiver steps, renderiza no formato de passos (Tickets de Entrada/Saída)
+      if (data.steps && Array.isArray(data.steps)) {
+        return (
+          <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-[#000000] [!important]">
+            {data.steps.map((step: any, i: number) => {
+              if (step.type === 'IMAGE') {
+                const src = step.base64 === 'LOGO' 
+                  ? 'https://raw.githubusercontent.com/oseiasmiranda85/guardian-parking/main/web-dashboard/public/logo-guardian.png'
+                  : step.base64
+                return (
+                  <div key={i} className="flex justify-center py-2">
+                    <img src={src} className={`${step.fullWidth ? 'w-full' : 'w-24'} h-auto object-contain bg-slate-50`} alt="Ticket Image" />
+                  </div>
+                )
+              }
+              if (step.type === 'SPACE') return <div key={i} className="h-2" />
+              if (step.type === 'QRCODE') {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(step.data)}`
+                return (
+                  <div key={i} className="flex flex-col items-center justify-center py-4 gap-2">
+                    <img src={qrUrl} className="w-32 h-32 border-4 border-white shadow-sm" alt="QR Code" />
+                    <span className="text-[9px] opacity-50">{step.data}</span>
+                  </div>
+                )
+              }
+              if (step.type === 'TEXT') {
+                return (
+                  <div 
+                    key={i} 
+                    className={`whitespace-pre-wrap ${step.align === 'CENTER' ? 'text-center' : 'text-left'} ${step.isBold ? 'font-bold' : ''}`}
+                  >
+                    {step.text}
+                  </div>
+                )
+              }
+              return null
+            })}
+          </div>
+        )
+      }
+
+      // Se não tiver steps mas tiver rawContent (Relatórios de Fechamento/Inventário)
+      if (data.rawContent) {
+        return (
+          <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-[#000000] [!important]">
+            <div className="flex justify-center py-4">
+              <img src="https://raw.githubusercontent.com/oseiasmiranda85/guardian-parking/main/web-dashboard/public/logo-guardian.png" className="w-24 h-auto" alt="Logo" />
+            </div>
+            <div className="whitespace-pre font-mono leading-none">
+              {data.rawContent}
+            </div>
+          </div>
+        )
+      }
+
+      return <pre className="text-[10px]">{jsonStr}</pre>
     } catch (e) {
       return <pre className="text-xs text-red-600 font-bold">{jsonStr}</pre>
     }
