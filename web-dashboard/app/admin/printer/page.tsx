@@ -1,9 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Printer, RefreshCcw, Trash2, ShieldAlert } from 'lucide-react'
 
 interface VirtualTicket {
@@ -14,14 +12,14 @@ interface VirtualTicket {
   deviceId: string
 }
 
-export default function PrinterMonitor() {
+function MonitorContent() {
   const searchParams = useSearchParams()
   const accessKey = searchParams.get('key')
   const [tickets, setTickets] = useState<VirtualTicket[]>([])
   const [loading, setLoading] = useState(true)
   const [authorized, setAuthorized] = useState(false)
 
-  const DEBUG_KEY = 'guardian_debug_2026' // Chave de acesso simples
+  const DEBUG_KEY = 'guardian_debug_2026'
 
   useEffect(() => {
     if (accessKey === DEBUG_KEY) {
@@ -38,7 +36,9 @@ export default function PrinterMonitor() {
     try {
       const res = await fetch('/api/admin/printer/list')
       const data = await res.json()
-      setTickets(data)
+      if (Array.isArray(data)) {
+        setTickets(data)
+      }
       setLoading(false)
     } catch (e) {
       console.error(e)
@@ -67,7 +67,7 @@ export default function PrinterMonitor() {
     try {
       const data = JSON.parse(jsonStr)
       return (
-        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight">
+        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-black">
           {data.steps?.map((step: any, i: number) => {
             if (step.type === 'IMAGE') return <div key={i} className="flex justify-center py-2"><Printer className="w-8 h-8 opacity-20" /></div>
             if (step.type === 'SPACE') return <div key={i} className="h-2" />
@@ -100,7 +100,7 @@ export default function PrinterMonitor() {
           </h1>
           <p className="text-muted-foreground">Os tickets gerados no terminal POS aparecem aqui em tempo real.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <button 
             onClick={clearHistory}
             className="p-2 hover:bg-red-50 text-red-500 rounded-full transition-colors"
@@ -108,9 +108,9 @@ export default function PrinterMonitor() {
           >
             <Trash2 className="w-4 h-4" />
           </button>
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-            Conectado
-          </Badge>
+          <div className="px-2 py-1 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
+            CONECTADO
+          </div>
           <button onClick={fetchTickets} className="p-2 hover:bg-white rounded-full transition-colors">
             <RefreshCcw className="w-4 h-4" />
           </button>
@@ -130,7 +130,7 @@ export default function PrinterMonitor() {
                 {renderTicketContent(t.content)}
               </div>
               <div className="bg-slate-100 border p-3 rounded-b-lg text-[10px] text-muted-foreground">
-                <div className="flex justify-between font-medium">
+                <div className="flex justify-between font-medium text-slate-700">
                   <span>ID: {t.id.slice(-8).toUpperCase()}</span>
                   <span>{new Date(t.createdAt).toLocaleTimeString()}</span>
                 </div>
@@ -141,12 +141,20 @@ export default function PrinterMonitor() {
           
           {tickets.length === 0 && (
             <div className="flex flex-col items-center justify-center w-full p-20 border-2 border-dashed rounded-xl opacity-40">
-              <Printer className="w-12 h-12 mb-4" />
-              <p>Nenhuma impressão detectada recentemente.</p>
+              <Printer className="w-12 h-12 mb-4 text-slate-400" />
+              <p className="text-slate-500">Nenhuma impressão detectada recentemente.</p>
             </div>
           )}
         </div>
       )}
     </div>
+  )
+}
+
+export default function PrinterMonitor() {
+  return (
+    <Suspense fallback={<div className="p-12 text-center italic">Carregando Monitor...</div>}>
+      <MonitorContent />
+    </Suspense>
   )
 }
