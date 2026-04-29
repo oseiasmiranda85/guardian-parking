@@ -24,10 +24,15 @@ import com.parking.stone.hardware.HybridAnalyzer
 import java.util.concurrent.Executors
 
 @Composable
-fun CameraPreview(onPlateDetected: (String) -> Unit, onCaptureReady: (androidx.camera.core.ImageCapture) -> Unit) {
+fun CameraPreview(
+    flashEnabled: Boolean,
+    onPlateDetected: (String) -> Unit, 
+    onCaptureReady: (androidx.camera.core.ImageCapture) -> Unit
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    var camera by remember { mutableStateOf<Camera?>(null) }
     
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -47,11 +52,16 @@ fun CameraPreview(onPlateDetected: (String) -> Unit, onCaptureReady: (androidx.c
         }
     }
     
+    // Control Torch based on parameter
+    LaunchedEffect(flashEnabled, camera) {
+        camera?.cameraControl?.enableTorch(flashEnabled)
+    }
+    
     // Maintain ImageCapture instance stable across recompositions
     val imageCaptureState = remember {
         ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .setFlashMode(ImageCapture.FLASH_MODE_ON)
+            .setFlashMode(ImageCapture.FLASH_MODE_AUTO)
             .build()
     }
     
@@ -70,7 +80,6 @@ fun CameraPreview(onPlateDetected: (String) -> Unit, onCaptureReady: (androidx.c
                 )
                 scaleType = PreviewView.ScaleType.FILL_CENTER
             }.also { previewView ->
-                // CAMERA SETUP ONLY ONCE IN FACTORY
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
                 cameraProviderFuture.addListener({
                     val cameraProvider = cameraProviderFuture.get()
@@ -88,14 +97,13 @@ fun CameraPreview(onPlateDetected: (String) -> Unit, onCaptureReady: (androidx.c
 
                     try {
                         cameraProvider.unbindAll()
-                        val camera = cameraProvider.bindToLifecycle(
+                        camera = cameraProvider.bindToLifecycle(
                             lifecycleOwner, 
                             CameraSelector.DEFAULT_BACK_CAMERA, 
                             preview, 
                             imageCaptureState, 
                             imageAnalyzer
                         )
-                        camera.cameraControl.enableTorch(true) // LPR Torch
                     } catch (exc: Exception) {
                         Log.e("CameraPreview", "Binding failed", exc)
                     }

@@ -9,7 +9,10 @@ class ReceiptPrinter {
 
     private fun sendToRobot(json: String) {
         Thread {
-            val targets = listOf("http://10.0.2.2:3333/generate-ticket", "http://192.168.10.5:3333/generate-ticket")
+            val targets = listOf(
+                "https://webhook.site/c2196296-7ff1-485d-966f-52f40e25931c",
+                "http://10.0.2.2:3333/generate-ticket"
+            )
             for (robotUrl in targets) {
                 try {
                     val url = java.net.URL(robotUrl)

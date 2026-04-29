@@ -11,6 +11,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,6 +69,22 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
     val scope = rememberCoroutineScope()
     val db = AppDatabase.getDatabase(context)
     
+    // Battery & Hardware Stats
+    var flashEnabled by remember { mutableStateOf(false) }
+    var cameraActive by remember { mutableStateOf(true) }
+    var lastInteraction by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    
+    // Inactivity Timeout (1 minute)
+    LaunchedEffect(lastInteraction) {
+        kotlinx.coroutines.delay(60000)
+        cameraActive = false
+    }
+
+    fun resetInactivity() {
+        lastInteraction = System.currentTimeMillis()
+        cameraActive = true
+    }
+
     // Recent Entries List
     var recentEntries by remember { mutableStateOf<List<ParkingEntry>>(emptyList()) }
 
@@ -88,53 +107,76 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
         if (foundEntry == null) {
             // --- SCANNING MODE ---
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                CameraPreview(
-                    onPlateDetected = { plate -> 
-                        if (foundEntry == null) {
-                            scope.launch {
-                                val tenantId = SessionManager.tenantId
-                                val isNumeric = plate.all { it.isDigit() }
-                                val entry = if (isNumeric) {
-                                    db.parkingDao().getEntryById(plate.toLongOrNull() ?: -1).let { if(it?.tenantId == tenantId && it.exitTime == null) it else null }
-                                } else {
-                                    db.parkingDao().getActiveEntryByPlate(plate, tenantId)
-                                }
-
-                                if (entry != null) {
-                                    val now = System.currentTimeMillis()
-                                    val durationMillis = now - entry.entryTime
-                                    val hours = TimeUnit.MILLISECONDS.toHours(durationMillis)
-                                    val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
-                                    durationString = "${hours}h ${minutes}min"
-                                    
-                                    // AUTO RELEASE LOGIC: If PAID, exit immediately
-                                    if (entry.isPaid) {
-                                        val updated = entry.copy(
-                                            exitTime = System.currentTimeMillis(),
-                                            isSynced = false,
-                                            exitDeviceId = com.parking.stone.data.DeviceManager.deviceId
-                                        )
-                                        db.parkingDao().updateEntry(updated)
-                                        ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
-                                        
-                                        withContext(Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
-                                        recentEntries = db.parkingDao().getActiveEntries(SessionManager.tenantId)
-                                        android.widget.Toast.makeText(context, "SAÍDA LIBERADA: ${entry.plate}", android.widget.Toast.LENGTH_LONG).show()
+                if (cameraActive) {
+                    CameraPreview(
+                        flashEnabled = flashEnabled,
+                        onPlateDetected = { plate -> 
+                            resetInactivity()
+                            if (foundEntry == null) {
+                                scope.launch {
+                                    val tenantId = SessionManager.tenantId
+                                    val isNumeric = plate.all { it.isDigit() }
+                                    val entry = if (isNumeric) {
+                                        db.parkingDao().getEntryById(plate.toLongOrNull() ?: -1).let { if(it?.tenantId == tenantId && it.exitTime == null) it else null }
                                     } else {
-                                        // Show for payment
-                                        foundEntry = entry
-                                        val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-                                        isRefundVoucher = totalMinutesLocal <= 15
-                                        calculatedFee = if (isRefundVoucher) 0.0 
-                                                       else if (entry.category == "CREDENCIADO") 0.0 
-                                                       else (if (entry.type == "Moto") 10.0 + (hours * 2.0) else 15.0 + (hours * 5.0))
+                                        db.parkingDao().getActiveEntryByPlate(plate, tenantId)
+                                    }
+
+                                    if (entry != null) {
+                                        val now = System.currentTimeMillis()
+                                        val durationMillis = now - entry.entryTime
+                                        val hours = TimeUnit.MILLISECONDS.toHours(durationMillis)
+                                        val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
+                                        durationString = "${hours}h ${minutes}min"
+                                        
+                                        // AUTO RELEASE LOGIC: If PAID, exit immediately
+                                        if (entry.isPaid) {
+                                            val updated = entry.copy(
+                                                exitTime = System.currentTimeMillis(),
+                                                isSynced = false,
+                                                exitDeviceId = com.parking.stone.data.DeviceManager.deviceId
+                                            )
+                                            db.parkingDao().updateEntry(updated)
+                                            ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
+                                            
+                                            withContext(Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
+                                            recentEntries = db.parkingDao().getActiveEntries(SessionManager.tenantId)
+                                            android.widget.Toast.makeText(context, "SAÍDA LIBERADA: ${entry.plate}", android.widget.Toast.LENGTH_LONG).show()
+                                        } else {
+                                            // Show for payment
+                                            foundEntry = entry
+                                            val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
+                                            isRefundVoucher = totalMinutesLocal <= 15
+                                            val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
+                                            calculatedFee = if (isRefundVoucher) 0.0 
+                                                           else if (entry.category == "CREDENCIADO") 0.0 
+                                                           else (if (entry.type == "Moto") 10.0 + (calculatedHours * 2.0) else 15.0 + (calculatedHours * 5.0))
+                                        }
                                     }
                                 }
                             }
+                        },
+                        onCaptureReady = {}
+                    )
+                } else {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray), contentAlignment = Alignment.Center) {
+                        Button(onClick = { resetInactivity() }) {
+                            Icon(Icons.Default.Sync, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Reativar Câmera")
                         }
-                    },
-                    onCaptureReady = {}
-                )
+                    }
+                }
+                
+                // Flash Toggle
+                FloatingActionButton(
+                    onClick = { flashEnabled = !flashEnabled; resetInactivity() },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                    containerColor = if (flashEnabled) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.6f),
+                    contentColor = if (flashEnabled) Color.Black else Color.White
+                ) {
+                    Icon(if(flashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff, contentDescription = "Flash")
+                }
                 Box(
                     modifier = Modifier
                         .size(280.dp)

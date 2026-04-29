@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,6 +58,23 @@ fun EntryScreen(navController: NavController) {
     
     // Plate Input State
     var isLegacyPlate by remember { mutableStateOf(false) } // Mercosul (Default) vs Legacy
+    
+    // Battery & Hardware Stats
+    var flashEnabled by remember { mutableStateOf(false) }
+    var cameraActive by remember { mutableStateOf(true) }
+    var lastInteraction by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    
+    // Inactivity Timeout (1 minute)
+    LaunchedEffect(lastInteraction) {
+        kotlinx.coroutines.delay(60000)
+        cameraActive = false
+    }
+
+    // Reset interaction on any meaningful state change
+    fun resetInactivity() {
+        lastInteraction = System.currentTimeMillis()
+        cameraActive = true
+    }
     
     // Accredited Flow State
     var showQrScanner by remember { mutableStateOf(false) }
@@ -117,7 +136,8 @@ fun EntryScreen(navController: NavController) {
     // --- PERSONA QR SCANNER OVERLAY ---
     if (showQrScanner) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-             CameraPreview(
+              CameraPreview(
+                flashEnabled = flashEnabled,
                 onPlateDetected = { token -> 
                     // Se for uma sequência numérica de 14 dígitos, tenta validar
                     if (token.length == 14 && token.all { it.isDigit() }) {
@@ -246,20 +266,42 @@ fun EntryScreen(navController: NavController) {
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Camera Preview Section (Fixed Height)
         Box(modifier = Modifier.weight(0.8f).fillMaxWidth()) {
-            CameraPreview(
-                onPlateDetected = { plate ->
-                    if (detectedPlate.isEmpty()) detectedPlate = plate
-                },
-                onCaptureReady = { capture -> imageCapture = capture }
-            )
+            if (cameraActive) {
+                CameraPreview(
+                    flashEnabled = flashEnabled,
+                    onPlateDetected = { plate ->
+                        resetInactivity()
+                        if (detectedPlate.isEmpty()) detectedPlate = plate
+                    },
+                    onCaptureReady = { capture -> imageCapture = capture }
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray), contentAlignment = Alignment.Center) {
+                    Button(onClick = { resetInactivity() }) {
+                        Icon(Icons.Default.Sync, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Reativar Câmera (Economia)")
+                    }
+                }
+            }
             
             // Overlays
             Box(
                 modifier = Modifier
                     .size(300.dp, 100.dp)
                     .align(Alignment.Center)
-                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .border(2.dp, if(cameraActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Gray, RoundedCornerShape(12.dp))
             )
+
+            // Flash Toggle
+            FloatingActionButton(
+                onClick = { flashEnabled = !flashEnabled; resetInactivity() },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                containerColor = if (flashEnabled) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.6f),
+                contentColor = if (flashEnabled) Color.Black else Color.White
+            ) {
+                Icon(if(flashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff, contentDescription = "Flash")
+            }
             
             IconButton(
                 onClick = { navController.popBackStack() },
@@ -305,6 +347,7 @@ fun EntryScreen(navController: NavController) {
                 OutlinedTextField(
                     value = detectedPlate,
                     onValueChange = { 
+                         resetInactivity()
                          val clean = it.filter { c -> c.isLetterOrDigit() }.uppercase()
                          if (clean.length <= 7) detectedPlate = clean
                     },
