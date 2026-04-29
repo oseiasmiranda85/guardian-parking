@@ -8,8 +8,11 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secur
 export async function middleware(request: NextRequest) {
     const pathname = request.nextUrl.pathname
 
-    // Exclude auth routes, static files and the login page (root)
-    if (pathname.startsWith('/api/auth') || pathname.startsWith('/_next') || pathname === '/') {
+    // Exclude auth routes, static files, login page, and the virtual printer push endpoint
+    if (pathname.startsWith('/api/auth') || 
+        pathname.startsWith('/_next') || 
+        pathname === '/' ||
+        pathname.startsWith('/api/admin/printer/push')) {
         return NextResponse.next()
     }
 
