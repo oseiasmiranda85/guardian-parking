@@ -3,38 +3,42 @@ package com.parking.stone.hardware
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.parking.stone.ParkingApp
 
 // Mocking Stone Printer SDK
 class ReceiptPrinter {
 
     private fun sendToRobot(json: String) {
+        val robotUrl = "https://guardian-portal-h651.onrender.com/api/admin/printer/push"
         Thread {
-            val targets = listOf(
-                "https://guardian-portal-h651.onrender.com/api/admin/printer/push",
-                "http://10.0.2.2:3333/generate-ticket"
-            )
-            for (robotUrl in targets) {
-                try {
-                    android.util.Log.d("Printer", "Enviando para: $robotUrl")
-                    val url = java.net.URL(robotUrl)
-                    val conn = url.openConnection() as java.net.HttpURLConnection
-                    conn.connectTimeout = 5000
-                    conn.readTimeout = 5000
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.doOutput = true
-                    
-                    conn.outputStream.use { it.write(json.toByteArray()) }
-                    val code = conn.responseCode
-                    android.util.Log.d("Printer", "Resposta: $code")
-                    if (code in 200..299) {
-                        break
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("Printer", "Erro ao enviar para $robotUrl: ${e.message}")
+            try {
+                android.util.Log.d("Printer", "Enviando para: $robotUrl")
+                val url = java.net.URL(robotUrl)
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                
+                conn.outputStream.use { it.write(json.toByteArray(Charsets.UTF_8)) }
+                val code = conn.responseCode
+                android.util.Log.d("Printer", "Resposta Servidor Virtual: $code")
+                
+                if (code !in 200..299) {
+                    showError("Erro na Impressão Virtual: $code")
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("Printer", "Falha de conexão: ${e.message}")
+                showError("Falha na Rede: Impressão Virtual")
             }
         }.start()
+    }
+
+    private fun showError(msg: String) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            android.widget.Toast.makeText(ParkingApp.instance, msg, android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 
     fun printEntryTicket(

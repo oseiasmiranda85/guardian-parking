@@ -5,6 +5,11 @@ import android.app.Application
 class ParkingApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        // Initialize dependency injection or other global setups here
+        instance = this
+    }
+
+    companion object {
+        lateinit var instance: ParkingApp
+            private set
     }
 }
