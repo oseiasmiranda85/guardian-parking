@@ -83,6 +83,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    // Math everything except static assets
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    // Match everything except static assets and apk files
+    matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.apk).*)'],
 }
