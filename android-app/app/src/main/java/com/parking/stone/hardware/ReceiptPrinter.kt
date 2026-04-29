@@ -10,7 +10,7 @@ class ReceiptPrinter {
     private fun sendToRobot(json: String) {
         Thread {
             val targets = listOf(
-                "https://webhook.site/c2196296-7ff1-485d-966f-52f40e25931c",
+                "https://guardian-portal-h651.onrender.com/api/admin/printer/push",
                 "http://10.0.2.2:3333/generate-ticket"
             )
             for (robotUrl in targets) {
@@ -124,6 +124,8 @@ class ReceiptPrinter {
         jsonBuilder.append("{")
         jsonBuilder.append("\"steps\": [${steps.joinToString(",")}],")
         jsonBuilder.append("\"eventName\": \"$eventName\",")
+        jsonBuilder.append("\"tenantId\": ${com.parking.stone.data.SessionManager.tenantId},")
+        jsonBuilder.append("\"terminal\": \"${com.parking.stone.data.DeviceManager.displayName}\",")
         jsonBuilder.append("\"timestamp\": \"$timestamp\"")
         jsonBuilder.append("}")
         
@@ -215,10 +217,11 @@ class ReceiptPrinter {
 
         val json = """
             {
-                "style": "INVENTORY",
+                "style": "REPORT",
                 "rawContent": ${escapeJson(rawContent)},
                 "operator": "$operator",
                 "sessionId": "$sessionId",
+                "tenantId": ${com.parking.stone.data.SessionManager.tenantId},
                 "total": $total,
                 "paymentStats": [${paymentJsonList.joinToString(",")}],
                 "terminal": "$terminalId",
@@ -263,8 +266,9 @@ class ReceiptPrinter {
 
         val json = """
             {
-                "style": "INVENTORY",
+                "style": "REPORT",
                 "rawContent": ${escapeJson(rawContent)},
+                "tenantId": ${com.parking.stone.data.SessionManager.tenantId},
                 "terminal": "${com.parking.stone.data.DeviceManager.displayName}",
                 "timestamp": "$timestamp"
             }
