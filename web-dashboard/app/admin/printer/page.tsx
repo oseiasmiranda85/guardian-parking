@@ -67,11 +67,11 @@ function MonitorContent() {
     try {
       const data = JSON.parse(jsonStr)
       return (
-        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-black">
+        <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-slate-950">
           {data.steps?.map((step: any, i: number) => {
-            if (step.type === 'IMAGE') return <div key={i} className="flex justify-center py-2"><Printer className="w-8 h-8 opacity-20" /></div>
+            if (step.type === 'IMAGE') return <div key={i} className="flex justify-center py-2"><Printer className="w-8 h-8 text-slate-300" /></div>
             if (step.type === 'SPACE') return <div key={i} className="h-2" />
-            if (step.type === 'QRCODE') return <div key={i} className="flex justify-center py-2 border border-dashed border-black/10"> [QR CODE: {step.data}] </div>
+            if (step.type === 'QRCODE') return <div key={i} className="flex justify-center py-2 border border-dashed border-slate-200 bg-slate-50"> [QR CODE: {step.data}] </div>
             if (step.type === 'TEXT') {
               return (
                 <div 
@@ -87,54 +87,60 @@ function MonitorContent() {
         </div>
       )
     } catch (e) {
-      return <pre className="text-xs">{jsonStr}</pre>
+      return <pre className="text-xs text-red-500">{jsonStr}</pre>
     }
   }
 
   return (
-    <div className="p-8 bg-slate-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-8 bg-slate-100 min-h-screen text-slate-900">
+      <div className="flex justify-between items-center mb-8 max-w-6xl mx-auto">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <span className="text-primary">🤖</span> Monitor de Impressão Virtual
+          <h1 className="text-3xl font-bold flex items-center gap-2 text-blue-700">
+            <span>🤖</span> Monitor de Impressão Virtual
           </h1>
-          <p className="text-muted-foreground">Os tickets gerados no terminal POS aparecem aqui em tempo real.</p>
+          <p className="text-slate-600">Os tickets gerados no terminal POS aparecem aqui em tempo real.</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-3 items-center">
           <button 
             onClick={clearHistory}
-            className="p-2 hover:bg-red-50 text-red-500 rounded-full transition-colors"
+            className="p-2.5 bg-white hover:bg-red-50 text-red-500 rounded-lg border shadow-sm transition-all"
             title="Limpar Histórico"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5" />
           </button>
-          <div className="px-2 py-1 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-            CONECTADO
+          <div className="px-3 py-1.5 rounded-lg text-xs font-bold bg-green-100 text-green-800 border border-green-200 shadow-sm">
+            ONLINE
           </div>
-          <button onClick={fetchTickets} className="p-2 hover:bg-white rounded-full transition-colors">
-            <RefreshCcw className="w-4 h-4" />
+          <button 
+            onClick={fetchTickets} 
+            className="p-2.5 bg-white hover:bg-blue-50 text-blue-600 rounded-lg border shadow-sm transition-all"
+          >
+            <RefreshCcw className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-12 italic text-muted-foreground">Carregando bobina...</div>
+        <div className="flex justify-center p-12 italic text-slate-500">Carregando bobina...</div>
       ) : (
-        <div className="flex overflow-x-auto gap-6 pb-8 snap-x">
+        <div className="flex overflow-x-auto gap-8 pb-8 snap-x max-w-full mx-auto px-4">
           {tickets.map((t) => (
-            <div key={t.id} className="snap-start min-w-[280px] max-w-[280px]">
-              <div className="bg-white shadow-xl rounded-t-lg border-x border-t p-6 relative min-h-[400px]">
+            <div key={t.id} className="snap-start min-w-[300px] max-w-[300px] transition-transform hover:-translate-y-1">
+              <div className="bg-white shadow-2xl rounded-t-xl border-x border-t p-8 relative min-h-[450px]">
                 {/* Paper cut effect */}
                 <div className="absolute -top-1 left-0 right-0 h-1 bg-white" style={{ clipPath: 'polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%)' }} />
                 
                 {renderTicketContent(t.content)}
               </div>
-              <div className="bg-slate-100 border p-3 rounded-b-lg text-[10px] text-muted-foreground">
-                <div className="flex justify-between font-medium text-slate-700">
+              <div className="bg-white border-x border-b p-4 rounded-b-xl text-[10px] shadow-lg">
+                <div className="flex justify-between font-bold text-slate-500 border-b pb-2 mb-2">
                   <span>ID: {t.id.slice(-8).toUpperCase()}</span>
-                  <span>{new Date(t.createdAt).toLocaleTimeString()}</span>
+                  <span>{new Date(t.createdAt).toLocaleString('pt-BR')}</span>
                 </div>
-                <div className="mt-1 opacity-70">Term: {t.deviceId}</div>
+                <div className="flex justify-between items-center opacity-80 text-slate-400">
+                  <span>TERMINAL:</span>
+                  <span className="font-mono">{t.deviceId}</span>
+                </div>
               </div>
             </div>
           ))}
