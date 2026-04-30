@@ -104,8 +104,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         }
     }, [searchParams])
 
-    // Exclude Sidebar for Login, Portal and Admin Panel
-    const isGenericPage = pathname === '/' || pathname === '/portal' || pathname.startsWith('/admin')
+    // Exclude Sidebar for Login, Portal, Downloads and Admin Panel
+    const isGenericPage = pathname === '/' || pathname === '/portal' || pathname === '/downloads' || pathname.startsWith('/admin')
 
     if (isGenericPage) {
         return <div className="min-h-screen bg-black text-white">{children}</div>
