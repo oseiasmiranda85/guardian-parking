@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/auth') || 
         pathname.startsWith('/_next') || 
         pathname === '/' ||
+        pathname === '/downloads' ||
         pathname.startsWith('/api/admin/printer/push')) {
         return NextResponse.next()
     }
