@@ -32,7 +32,7 @@ export default function PortalPage() {
 
                 const res = await fetch(url, {
                     headers: {
-                        'Authorization': `Bearer ${currentUser.token}`
+                        'Authorization': `Bearer ${sessionData.token}`
                     }
                 })
                 const data = await res.json()
