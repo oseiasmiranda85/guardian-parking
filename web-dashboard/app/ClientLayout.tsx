@@ -14,7 +14,8 @@ import {
     Monitor,
     LayoutDashboard,
     MapPin,
-    Settings
+    Settings,
+    Smartphone
 } from 'lucide-react'
 
 const MenuLink = ({ href, icon: Icon, children }: any) => {
