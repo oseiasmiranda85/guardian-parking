@@ -14,6 +14,61 @@ interface ServiceStatus {
     tenantName?: string
 }
 
+const NeonMonitoring = () => {
+    const [neonStats, setNeonStats] = React.useState<any>(null)
+    const [loading, setLoading] = React.useState(true)
+
+    React.useEffect(() => {
+        const fetchNeon = () => {
+            fetch('/api/admin/neon/stats')
+                .then(res => res.json())
+                .then(data => {
+                    setNeonStats(data)
+                    setLoading(false)
+                })
+                .catch(() => setLoading(false))
+        }
+        fetchNeon()
+        const interval = setInterval(fetchNeon, 30000)
+        return () => clearInterval(interval)
+    }, [])
+
+    if (loading) return <div className="animate-pulse bg-stone-900 h-32 rounded-3xl border border-white/10 mb-8"></div>
+
+    return (
+        <div className="bg-stone-900/80 border border-white/10 p-8 rounded-[40px] mb-8 relative overflow-hidden group hover:border-red-500/30 transition-all">
+            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all">
+                <Database className="w-32 h-32 text-red-500" />
+            </div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                <div className="flex items-center gap-4">
+                    <div className={`w-3 h-3 rounded-full animate-pulse ${neonStats?.status === 'ready' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-yellow-500'}`}></div>
+                    <div>
+                        <h4 className="text-xs font-black uppercase tracking-[0.3em] text-gray-500 mb-1">Database Core Monitor</h4>
+                        <p className="text-3xl font-black text-white italic tracking-tighter uppercase">{neonStats?.status || 'Sincronizando...'}</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-8 flex-1">
+                    <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Region</p>
+                        <p className="text-sm font-bold text-gray-300">{neonStats?.region || '---'}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">PG Version</p>
+                        <p className="text-sm font-bold text-gray-300">v{neonStats?.pg_version || '---'}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Project ID</p>
+                        <p className="text-sm font-bold text-gray-400 font-mono">old-moon-8... <ExternalLink className="inline w-3 h-3" /></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function IntegrationsDashboard() {
     const [internal, setInternal] = useState<ServiceStatus[]>([])
     const [external, setExternal] = useState<ServiceStatus[]>([])
@@ -138,6 +193,8 @@ export default function IntegrationsDashboard() {
                     <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 bg-red-600 text-white px-8 py-3 rounded-2xl text-xs font-bold hover:bg-red-500 transition shadow-lg shadow-red-900/40 uppercase tracking-widest"><Plus className="w-4 h-4" /> Nova Integração</button>
                 </div>
             </div>
+            
+            <NeonMonitoring />
 
             {/* Filter Section */}
             <div className="flex items-center gap-4 bg-stone-900/30 p-4 rounded-2xl border border-white/5">
