@@ -1,13 +1,16 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Plus, Edit2, Trash2, Key } from 'lucide-react'
+import { Plus, Edit2, Trash2, Key, Building2, CheckCircle2 } from 'lucide-react'
 
 export default function UsersPage() {
     const [users, setUsers] = useState<any[]>([])
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [currentUser, setCurrentUser] = useState<any>(null)
     const [editingUser, setEditingUser] = useState<any>(null)
+    const [networkTenants, setNetworkTenants] = useState<any[]>([])
+    const [selectedTenants, setSelectedTenants] = useState<number[]>([])
+    const [isLinkingLoading, setIsLinkingLoading] = useState(false)
 
     // Check session on mount and fetch users
     React.useEffect(() => {
@@ -75,9 +78,26 @@ export default function UsersPage() {
         }
     }
 
-    const handleEdit = (user: any) => {
+    const handleEdit = async (user: any) => {
         setEditingUser(user)
         setIsFormOpen(true)
+        setSelectedTenants([])
+        setNetworkTenants([])
+
+        try {
+            const tid = sessionStorage.getItem('current_tenant_id')
+            if (tid) {
+                const res = await fetch(`/api/owner/tenants?tenantId=${tid}`)
+                const data = await res.json()
+                if (Array.isArray(data)) setNetworkTenants(data)
+            }
+
+            const resLink = await fetch(`/api/users/${user.id}/tenants`)
+            const linked = await resLink.json()
+            if (Array.isArray(linked)) setSelectedTenants(linked)
+        } catch (e) {
+            console.error("Error loading multi-tenant data:", e)
+        }
     }
 
     const handleSaveUser = async (e: React.FormEvent) => {
@@ -108,7 +128,15 @@ export default function UsersPage() {
                 if (res.ok) {
                     const updatedUser = await res.json()
                     setUsers(users.map(u => u.id === editingUser.id ? updatedUser : u))
-                    simulateSync('Perfil Atualizado')
+                    
+                    // SAVE LINKS
+                    await fetch(`/api/users/${editingUser.id}/tenants`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tenantIds: selectedTenants })
+                    })
+
+                    simulateSync('Perfil e Vínculos Atualizados')
                 } else {
                     const err = await res.json()
                     alert('Erro ao atualizar: ' + err.error)
@@ -376,6 +404,41 @@ export default function UsersPage() {
                                     </label>
                                 </div>
                             </div>
+
+                            {editingUser && networkTenants.length > 1 && (
+                                <div className="pt-6 border-t border-white/10">
+                                    <div className="flex items-center gap-2 mb-4 text-stone-400">
+                                        <Building2 className="w-5 h-5" />
+                                        <h4 className="font-bold">Unidades Autorizadas (Rede)</h4>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {networkTenants.map(tenant => (
+                                            <label key={tenant.id} className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-2 h-2 rounded-full ${selectedTenants.includes(tenant.id) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-gray-600'}`} />
+                                                    <span className="text-sm font-medium">{tenant.name}</span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-5 h-5 rounded border-white/10 bg-black text-stone-500 focus:ring-stone-500"
+                                                    checked={selectedTenants.includes(tenant.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) setSelectedTenants([...selectedTenants, tenant.id])
+                                                        else {
+                                                            // Prevents removing access from current tenant if it's the only one? 
+                                                            // Or just allow it. Usually the manager shouldn't lock themselves out.
+                                                            setSelectedTenants(selectedTenants.filter(id => id !== tenant.id))
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 mt-3 italic">
+                                        * Ao habilitar uma unidade, o usuário poderá selecioná-la no App Android após o login.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
                                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-gray-400 hover:text-white">Cancelar</button>
