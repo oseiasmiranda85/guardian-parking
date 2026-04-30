@@ -151,7 +151,7 @@ export default function PortalPage() {
                                         • Auditoria e Logs de Segurança
                                     </p>
                                 </div>
-
+                                <div className="flex items-center text-red-500 font-bold text-sm mt-6">
                                     Acessar Admin <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition" />
                                 </div>
                             </div>
