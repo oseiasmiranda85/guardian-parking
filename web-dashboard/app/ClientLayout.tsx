@@ -217,6 +217,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                             <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-4 px-4">Sistema</div>
                             <MenuLink href="/settings/attendance" icon={Settings}>Configurações de Atendimento</MenuLink>
                             <MenuLink href="/devices" icon={Monitor}>Dispositivos</MenuLink>
+                            <MenuLink href="/downloads" icon={Smartphone}>Downloads (APK)</MenuLink>
                             <MenuLink href="/reports" icon={FileText}>Relatórios</MenuLink>
                         </>
                     )}

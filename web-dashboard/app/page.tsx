@@ -98,7 +98,9 @@ export default function LoginPage() {
                     </button>
 
                     <div className="mt-6 text-center">
-                        {/* <a href="#" className="text-xs text-gray-500 hover:text-stone-400 transition">Esqueceu sua senha?</a> */}
+                        <a href="/downloads" className="text-xs text-stone-500 hover:text-white transition flex items-center justify-center gap-2">
+                            <span>Baixar Aplicativo para Terminais POS</span>
+                        </a>
                     </div>
                 </form>
 

@@ -256,14 +256,13 @@ export default function AttendanceSettings() {
                         <p className="text-gray-400 max-w-md">Instale a versão mais recente nos terminais POS para ativar o multi-login e a emissão de cortesia por supervisores.</p>
                     </div>
 
-                    <a 
-                        href="/downloads/guardian-v1.9.1.apk" 
-                        download
+                    <Link 
+                        href="/downloads" 
                         className="flex items-center gap-3 px-8 py-4 bg-stone-100 text-black font-black rounded-xl hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-xl"
                     >
                         <RefreshCcw className="w-6 h-6" />
-                        BAIXAR APK v1.9.1
-                    </a>
+                        VER CENTRAL DE DOWNLOADS
+                    </Link>
                 </div>
             </div>
         </div>
