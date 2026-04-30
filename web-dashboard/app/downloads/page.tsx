@@ -5,9 +5,9 @@ import { Download, Smartphone, ShieldCheck, Zap, RefreshCcw } from 'lucide-react
 import Link from 'next/link'
 
 export default function DownloadsPage() {
-    const currentVersion = "1.9.1"
+    const currentVersion = "1.9.2"
     const releaseDate = "30 de Abril, 2026"
-    const apkUrl = "/downloads/guardian-v1.9.1.apk"
+    const apkUrl = "/downloads/guardian-v1.9.2.apk"
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -94,11 +94,11 @@ export default function DownloadsPage() {
                     <h3 className="text-center text-sm font-black text-gray-500 uppercase tracking-widest">O que há de novo na v{currentVersion}</h3>
                     <ul className="space-y-4">
                         {[
+                            "Precificação Dinâmica por Turnos (Mudança automática por horário)",
+                            "Suporte a Tolerância Zero e Estorno Dinâmico (Sincronizado com o portal)",
                             "Suporte a Multi-Login (Escolha de unidade no acesso)",
                             "Nova função de Emissão de Cortesia para Gerentes",
-                            "Sincronização otimizada de tabelas de preços",
-                            "Melhorias na estabilidade de impressão térmica",
-                            "Correções críticas de segurança e performance"
+                            "Melhorias na estabilidade de sincronização offline"
                         ].map((note, i) => (
                             <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>
