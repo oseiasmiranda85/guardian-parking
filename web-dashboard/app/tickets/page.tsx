@@ -297,12 +297,14 @@ export default function TicketsPage() {
                                 <td className="p-4 text-gray-400">{ticket.duration}</td>
                                  <td className="p-4 text-xs">
                                     <span className={`px-2 py-1 rounded-full font-bold ${
+                                        ticket.ticketType === 'CORTESIA' ? 'bg-purple-500/10 text-purple-400' :
                                         (ticket.status === 'PAID' || ticket.status === 'Paid') ? 'bg-green-500/10 text-green-500' : 
                                         ticket.status === 'REFUNDED' ? 'bg-amber-500/10 text-amber-500' :
                                         (ticket.status === 'EXITED' || ticket.status === 'Closed') ? 'bg-blue-500/10 text-blue-500' : 
                                         'bg-yellow-500/10 text-yellow-500'
                                     }`}>
-                                        {(ticket.status === 'PAID' || ticket.status === 'Paid') ? 'Pago' : 
+                                        {ticket.ticketType === 'CORTESIA' ? 'Cortesia' :
+                                         (ticket.status === 'PAID' || ticket.status === 'Paid') ? 'Pago' : 
                                          ticket.status === 'REFUNDED' ? 'Estornado' :
                                          (ticket.status === 'EXITED' || ticket.status === 'Closed') ? 'Saiu' : 'No Pátio'}
                                     </span>

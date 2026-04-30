@@ -4,7 +4,13 @@ import retrofit2.http.*
 import okhttp3.RequestBody
 import okhttp3.MultipartBody
 
-data class LoginResponse(val token: String, val user: UserInfo, val tenant: TenantInfo)
+data class LoginResponse(
+    val status: String? = null,
+    val token: String? = null, 
+    val user: UserInfo? = null, 
+    val tenant: TenantInfo? = null,
+    val tenants: List<TenantInfo>? = null
+)
 data class UserInfo(val id: Int, val name: String, val email: String, val role: String)
 data class TenantInfo(val id: Int, val name: String)
 data class DeviceConfig(

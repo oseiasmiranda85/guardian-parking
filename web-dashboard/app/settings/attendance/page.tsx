@@ -217,19 +217,19 @@ export default function AttendanceSettings() {
                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
                     <div className="space-y-2 text-center md:text-left">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold tracking-widest uppercase mb-2">
-                            Versão 1.9.0 Disponível
+                            Versão 1.9.1 Disponível
                         </div>
                         <h2 className="text-2xl font-bold">Central de Atualização (APK)</h2>
-                        <p className="text-gray-400 max-w-md">Instale a versão mais recente nos terminais POS para ativar o OCR de alta performance e as novas lógicas de saída.</p>
+                        <p className="text-gray-400 max-w-md">Instale a versão mais recente nos terminais POS para ativar o multi-login e a emissão de cortesia por supervisores.</p>
                     </div>
 
                     <a 
-                        href="/downloads/guardian-v1.9.0.apk" 
+                        href="/downloads/guardian-v1.9.1.apk" 
                         download
                         className="flex items-center gap-3 px-8 py-4 bg-stone-100 text-black font-black rounded-xl hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-xl"
                     >
                         <RefreshCcw className="w-6 h-6" />
-                        BAIXAR APK ATUALIZADO
+                        BAIXAR APK v1.9.1
                     </a>
                 </div>
             </div>

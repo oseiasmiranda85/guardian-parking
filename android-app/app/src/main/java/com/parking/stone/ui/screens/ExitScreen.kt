@@ -417,6 +417,8 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                             FilterChip(selected = paymentMethod == key, onClick = { paymentMethod = key }, label = { Text(label) }, colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.Black))
                         }
                     }
+                }
+
                 if (com.parking.stone.data.ConfigManager.requireExitPhoto) {
                     Text("Foto de Saída (OBRIGATÓRIA)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                     Button(

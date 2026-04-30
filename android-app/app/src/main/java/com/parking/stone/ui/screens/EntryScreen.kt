@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -530,85 +531,22 @@ fun EntryScreen(navController: NavController) {
                     if (detectedPlate.isNotEmpty() && !isProcessing) {
                         isProcessing = true
                         val currentAmount = if (isPrePaid) (if (vehicleType == "Moto") 10.0 else 20.0) else 0.0
-                        
-                        val photoFile = java.io.File(context.filesDir, "plate_${System.currentTimeMillis()}.jpg")
-                        
-                        val saveAndPrint = { finalPhotoPath: String? ->
-                            scope.launch {
-                                try {
-                                    val db = com.parking.stone.data.AppDatabase.getDatabase(context)
-                                    val entry = com.parking.stone.data.model.ParkingEntry(
-                                        plate = detectedPlate,
-                                        type = vehicleType,
-                                        helmets = if (vehicleType == "Moto") helmets.toIntOrNull() ?: 0 else 0,
-                                        entryTime = System.currentTimeMillis(),
-                                        isPaid = isPrePaid,
-                                        amount = currentAmount,
-                                        paymentMethod = if (isPrePaid) paymentMethod else null,
-                                        transactionId = if (isPrePaid) "TX-${System.currentTimeMillis()}" else null,
-                                        operatorName = com.parking.stone.data.SessionManager.currentUser?.name ?: "Desconhecido",
-                                        operatorId = com.parking.stone.data.SessionManager.currentUser?.id,
-                                        billingMode = if (isPrePaid) "PREPAID" else "POSTPAID",
-                                        category = "ROTATIVO",
-                                        photoPath = finalPhotoPath,
-                                        tenantId = com.parking.stone.data.SessionManager.tenantId,
-                                        deviceId = com.parking.stone.data.DeviceManager.deviceId
-                                    )
-                                    val newId = db.parkingDao().insertEntry(entry)
-                                    val printer = com.parking.stone.hardware.ReceiptPrinter()
-                                    printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", newId.toString(), finalPhotoPath, entry.helmets)
-                                    
-                                    // Trigger Sync (Fire and forget)
-                                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                        try {
-                                            val repo = com.parking.stone.data.XSync(db.parkingDao())
-                                            repo.syncTickets(context)
-                                            repo.syncSessions()
-                                        } catch(e: Exception) { 
-                                            Log.e("Sync", "Auto-sync failed: ${e.message}")
-                                        }
-                                    }
-                                    
-                                    showSuccessDialog = true
-                                } catch(e: Exception) {
-                                    Log.e("Entry", "Save failed: ${e.message}")
-                                    android.widget.Toast.makeText(context, "Erro ao salvar: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                                }
-                                isProcessing = false
-                            }
-                        }
-
-                        if (capturedBitmap != null) {
-                            // FAST PATH: Save the already captured bitmap
-                            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                try {
-                                    val out = java.io.FileOutputStream(photoFile)
-                                    capturedBitmap!!.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out)
-                                    out.flush()
-                                    out.close()
-                                    saveAndPrint(photoFile.absolutePath)
-                                } catch(e: Exception) {
-                                    saveAndPrint(null)
-                                }
-                            }
-                        } else if (imageCapture != null) {
-                            // SLOW PATH: Manual entry but need photo
-                            val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
-                            imageCapture!!.takePicture(
-                                outputOptions,
-                                androidx.core.content.ContextCompat.getMainExecutor(context),
-                                object : androidx.camera.core.ImageCapture.OnImageSavedCallback {
-                                    override fun onImageSaved(output: androidx.camera.core.ImageCapture.OutputFileResults) {
-                                        saveAndPrint(photoFile.absolutePath)
-                                    }
-                                    override fun onError(exc: androidx.camera.core.ImageCaptureException) {
-                                        saveAndPrint(null)
-                                    }
-                                }
-                            )
-                        } else {
-                            saveAndPrint(null)
-                        }
+                        saveEntryWithPhoto(
+                            context = context,
+                            scope = scope,
+                            plate = detectedPlate,
+                            type = vehicleType,
+                            helmetsCount = if (vehicleType == "Moto") helmets.toIntOrNull() ?: 0 else 0,
+                            amount = currentAmount,
+                            isPaid = isPrePaid,
+                            method = if (isPrePaid) paymentMethod else null,
+                            billing = if (isPrePaid) "PREPAID" else "POSTPAID",
+                            category = "ROTATIVO",
+                            imageCapture = imageCapture,
+                            bitmap = capturedBitmap,
+                            onSuccess = { showSuccessDialog = true },
+                            onFinish = { isProcessing = false }
+                        )
                     }
                 },
                 enabled = !isProcessing && detectedPlate.length >= 7,
@@ -618,6 +556,43 @@ fun EntryScreen(navController: NavController) {
             ) {
                 if (isProcessing) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
                 else Text("CONFIRMAR ENTRADA", fontWeight = FontWeight.Bold)
+            }
+
+            // Courtesy Button (Managers/Supervisors only)
+            val userRole = com.parking.stone.data.SessionManager.currentUser?.role
+            if (userRole == com.parking.stone.data.model.UserRole.MANAGER || 
+                userRole == com.parking.stone.data.model.UserRole.SUPERVISOR ||
+                userRole == com.parking.stone.data.model.UserRole.MASTER) {
+                
+                OutlinedButton(
+                    onClick = {
+                        if (detectedPlate.length >= 7 && !isProcessing) {
+                            isProcessing = true
+                            saveEntryWithPhoto(
+                                context = context,
+                                scope = scope,
+                                plate = detectedPlate,
+                                type = vehicleType,
+                                helmetsCount = if (vehicleType == "Moto") helmets.toIntOrNull() ?: 0 else 0,
+                                amount = 0.0,
+                                isPaid = true, // Courtesy is considered paid/cleared
+                                method = "CORTESIA",
+                                billing = "PREPAID",
+                                category = "CORTESIA",
+                                imageCapture = imageCapture,
+                                bitmap = capturedBitmap,
+                                onSuccess = { showSuccessDialog = true },
+                                onFinish = { isProcessing = false }
+                            )
+                        }
+                    },
+                    enabled = !isProcessing && detectedPlate.length >= 7,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                ) {
+                    Text("EMITIR CORTESIA", color = Color.Gray, fontWeight = FontWeight.Bold)
+                }
             }
             
             // Extra spacing for scroll
@@ -644,3 +619,105 @@ fun VehicleTypeButton(text: String, selected: Boolean, modifier: Modifier = Modi
 }
 
 
+
+private fun saveEntryWithPhoto(
+    context: android.content.Context,
+    scope: kotlinx.coroutines.CoroutineScope,
+    plate: String,
+    type: String,
+    helmetsCount: Int,
+    amount: Double,
+    isPaid: Boolean,
+    method: String?,
+    billing: String,
+    category: String,
+    imageCapture: androidx.camera.core.ImageCapture?,
+    bitmap: android.graphics.Bitmap?,
+    onSuccess: () -> Unit,
+    onFinish: () -> Unit
+) {
+    val photoFile = java.io.File(context.filesDir, "plate_${System.currentTimeMillis()}.jpg")
+    
+    val saveAndPrint = { finalPhotoPath: String? ->
+        scope.launch {
+            try {
+                val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+                val entry = com.parking.stone.data.model.ParkingEntry(
+                    plate = plate,
+                    type = type,
+                    helmets = helmetsCount,
+                    entryTime = System.currentTimeMillis(),
+                    isPaid = isPaid,
+                    amount = amount,
+                    paymentMethod = method,
+                    transactionId = if (isPaid) "TX-${System.currentTimeMillis()}" else null,
+                    operatorName = com.parking.stone.data.SessionManager.currentUser?.name ?: "Desconhecido",
+                    operatorId = com.parking.stone.data.SessionManager.currentUser?.id,
+                    billingMode = billing,
+                    category = category,
+                    photoPath = finalPhotoPath,
+                    tenantId = com.parking.stone.data.SessionManager.tenantId,
+                    deviceId = com.parking.stone.data.DeviceManager.deviceId
+                )
+                val newId = db.parkingDao().insertEntry(entry)
+                val printer = com.parking.stone.hardware.ReceiptPrinter()
+                
+                val displayMethod = if (method == "CORTESIA") "CORTESIA" else (if(isPaid) "PAGO" else "A PAGAR")
+                printer.printEntryTicket(
+                    if(category == "CORTESIA") "CORTESIA" else "ESTACIONAMENTO", 
+                    entry.plate, 
+                    entry.type, 
+                    "R$ ${String.format("%.2f", amount)}", 
+                    displayMethod, 
+                    newId.toString(), 
+                    finalPhotoPath, 
+                    entry.helmets
+                )
+                
+                // Trigger Sync
+                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val repo = com.parking.stone.data.XSync(db.parkingDao())
+                        repo.syncTickets(context)
+                        repo.syncSessions()
+                    } catch(e: Exception) { }
+                }
+                
+                onSuccess()
+            } catch(e: Exception) {
+                android.widget.Toast.makeText(context, "Erro: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            }
+            onFinish()
+        }
+    }
+
+    if (bitmap != null) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val out = java.io.FileOutputStream(photoFile)
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out)
+                out.flush()
+                out.close()
+                saveAndPrint(photoFile.absolutePath)
+            } catch(e: Exception) {
+                saveAndPrint(null)
+            }
+        }
+    } else if (imageCapture != null) {
+        val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
+        imageCapture.takePicture(
+            outputOptions,
+            androidx.core.content.ContextCompat.getMainExecutor(context),
+            object : androidx.camera.core.ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(output: androidx.camera.core.ImageCapture.OutputFileResults) {
+                    saveAndPrint(photoFile.absolutePath)
+                }
+                override fun onError(exc: androidx.camera.core.ImageCaptureException) {
+                    saveAndPrint(null)
+                }
+            }
+        )
+    } else {
+        saveAndPrint(null)
+    }
+}
