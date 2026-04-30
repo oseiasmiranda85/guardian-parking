@@ -29,40 +29,77 @@ const NeonMonitoring = () => {
                 .catch(() => setLoading(false))
         }
         fetchNeon()
-        const interval = setInterval(fetchNeon, 30000)
+        const interval = setInterval(fetchNeon, 15000) // Fast refresh for NOC
         return () => clearInterval(interval)
     }, [])
 
-    if (loading) return <div className="animate-pulse bg-stone-900 h-32 rounded-3xl border border-white/10 mb-8"></div>
+    if (loading) return (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[1, 2, 3, 4].map(i => <div key={i} className="animate-pulse bg-stone-900 h-32 rounded-3xl border border-white/10"></div>)}
+        </div>
+    )
+
+    const formatBytes = (bytes: number) => {
+        if (!bytes) return '0 B'
+        const k = 1024
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
 
     return (
-        <div className="bg-stone-900/80 border border-white/10 p-8 rounded-[40px] mb-8 relative overflow-hidden group hover:border-red-500/30 transition-all">
-            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all">
-                <Database className="w-32 h-32 text-red-500" />
+        <div className="space-y-6 mb-10">
+            <div className="flex items-center gap-3 mb-2">
+                <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${neonStats?.project?.status === 'ready' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-yellow-500'}`}></div>
+                <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-500">Infraestrutura Crítica • Neon DB</h3>
             </div>
-            
-            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                <div className="flex items-center gap-4">
-                    <div className={`w-3 h-3 rounded-full animate-pulse ${neonStats?.status === 'ready' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-yellow-500'}`}></div>
-                    <div>
-                        <h4 className="text-xs font-black uppercase tracking-[0.3em] text-gray-500 mb-1">Database Core Monitor</h4>
-                        <p className="text-3xl font-black text-white italic tracking-tighter uppercase">{neonStats?.status || 'Sincronizando...'}</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Health & Project */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] hover:border-emerald-500/30 transition-all">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Status do Cluster</p>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-white italic uppercase">{neonStats?.project?.status || 'OFFLINE'}</span>
+                        <span className="text-[10px] text-emerald-500 font-bold">READY</span>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-2 font-mono">{neonStats?.project?.region} • v{neonStats?.project?.pg_version}</p>
+                </div>
+
+                {/* Real-time Load */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] hover:border-blue-500/30 transition-all">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Carga em Tempo Real</p>
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <span className="text-3xl font-black text-blue-500">{neonStats?.realtime?.active_connections}</span>
+                            <span className="text-[10px] text-gray-500 ml-2 uppercase font-bold tracking-tighter">Conexões PG</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-3xl font-black text-emerald-500">{neonStats?.realtime?.active_terminals}</span>
+                            <span className="text-[10px] text-gray-500 block uppercase font-bold tracking-tighter">PDVs Online</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-8 flex-1">
-                    <div>
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Region</p>
-                        <p className="text-sm font-bold text-gray-300">{neonStats?.region || '---'}</p>
+                {/* Compute & Processing */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] hover:border-red-500/30 transition-all">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Compute & Processing</p>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-white">{Math.floor((neonStats?.usage?.compute_seconds || 0) / 3600)}h</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Tempo CPU</span>
                     </div>
-                    <div>
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">PG Version</p>
-                        <p className="text-sm font-bold text-gray-300">v{neonStats?.pg_version || '---'}</p>
+                    <div className="w-full bg-white/5 h-1 rounded-full mt-3 overflow-hidden">
+                        <div className="bg-red-500 h-full w-[15%]"></div>
                     </div>
-                    <div>
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Project ID</p>
-                        <p className="text-sm font-bold text-gray-400 font-mono">old-moon-8... <ExternalLink className="inline w-3 h-3" /></p>
+                </div>
+
+                {/* Data & Storage */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] hover:border-purple-500/30 transition-all">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Data & Storage</p>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-white">{formatBytes(neonStats?.project?.storage_bytes)}</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">Em Disco</span>
                     </div>
+                    <p className="text-[10px] text-gray-600 mt-2 font-mono">I/O: {formatBytes(neonStats?.usage?.data_transfer_bytes)} trafegados</p>
                 </div>
             </div>
         </div>
