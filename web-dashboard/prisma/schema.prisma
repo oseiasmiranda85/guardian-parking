@@ -60,6 +60,9 @@ model Tenant {
   transactions         Transaction[]
   vehicles             Vehicle[]
   virtualTickets       VirtualTicket[]
+  globalAutoRelease    Boolean               @default(false)
+  globalRequireExitTicket Boolean            @default(true)
+  defaultTicketLayout  String                @default("FULL")
 }
 
 model Subscription {
