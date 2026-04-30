@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Monitor, RefreshCw, Smartphone, Clock, Activity, ArrowUpDown, Wifi, WifiOff } from 'lucide-react'
+import { Monitor, RefreshCw, Smartphone, Clock, Activity } from 'lucide-react'
 
 export default function DevicesPage() {
     const searchParams = useSearchParams()
     const [devices, setDevices] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+    const [selectedDevice, setSelectedDevice] = useState<any>(null)
+    const [saving, setSaving] = useState(false)
 
     const fetchDevices = async () => {
         setLoading(true)
@@ -34,11 +36,25 @@ export default function DevicesPage() {
         return () => clearInterval(interval)
     }, [])
 
+    const updateDeviceConfig = async (deviceId: string, updates: any) => {
+        setSaving(true)
+        try {
+            await fetch(`/api/dashboard/devices/update`, {
+                method: 'POST',
+                body: JSON.stringify({ deviceId, ...updates })
+            });
+            fetchDevices(); // Refresh
+            if (selectedDevice) {
+                setSelectedDevice((prev: any) => ({ ...prev, ...updates }))
+            }
+        } catch (e) { console.error(e) }
+        setSaving(false)
+    }
+
     const onlineCount = devices.filter(d => d.online).length
 
     return (
         <div className="space-y-6">
-
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
@@ -49,7 +65,7 @@ export default function DevicesPage() {
                         </h2>
                     </div>
                     <p className="text-gray-500 text-sm mt-1">
-                        Dispositivos registrados automaticamente via sincronização do App Android
+                        Gerenciamento remoto e configurações de atendimento dos terminais
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -60,7 +76,7 @@ export default function DevicesPage() {
                     )}
                     <button
                         onClick={fetchDevices}
-                        className="flex items-center gap-2 bg-stone-800 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm"
+                        className="flex items-center gap-2 bg-stone-800 border border-white/10 px-4 py-2 rounded-lg hover:bg-white/5 transition text-sm text-white"
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         Atualizar
@@ -76,7 +92,7 @@ export default function DevicesPage() {
                 </div>
                 <div className="bg-stone-900 border border-emerald-500/20 rounded-xl p-4 text-center">
                     <p className="text-3xl font-black text-emerald-400">{onlineCount}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Online (30 min)</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Online (10 min)</p>
                 </div>
                 <div className="bg-stone-900 border border-white/10 rounded-xl p-4 text-center">
                     <p className="text-3xl font-black text-blue-400">
@@ -96,7 +112,6 @@ export default function DevicesPage() {
                     <p className="text-gray-600 text-sm mt-1">
                         Os dispositivos aparecem aqui automaticamente após a primeira sincronização do App Android.
                     </p>
-                    <p className="text-gray-700 text-xs mt-3 font-mono">ID do terminal: POS-XXXXXXXX (gerado pelo Android ID)</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -109,45 +124,24 @@ export default function DevicesPage() {
                                     : 'border-white/10 hover:border-white/20'
                             }`}
                         >
-                            {/* Background glow */}
-                            <div className={`absolute top-0 right-0 w-32 h-32 -mt-12 -mr-12 rounded-full blur-3xl opacity-10 transition-opacity group-hover:opacity-20 ${
-                                device.online ? 'bg-emerald-500' : 'bg-gray-500'
-                            }`} />
-
                             {/* Header row */}
                             <div className="flex items-start justify-between mb-5">
                                 <div className="p-3 bg-black/50 rounded-lg border border-white/5">
                                     <Smartphone className="w-5 h-5 text-stone-400" />
                                 </div>
-                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border ${
-                                    device.online
-                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                        : 'bg-white/5 text-gray-500 border-white/10'
-                                }`}>
-                                    {device.online ? (
-                                        <>
-                                            <div className="relative">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                <div className="absolute inset-0 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                                            </div>
-                                            ONLINE
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                                            OFFLINE
-                                        </>
-                                    )}
-                                </div>
+                                <button 
+                                    onClick={() => setSelectedDevice(device)}
+                                    className="p-2 bg-stone-800 hover:bg-stone-700 rounded-lg border border-white/10 text-white transition-colors"
+                                >
+                                    <Activity className="w-4 h-4" />
+                                </button>
                             </div>
 
-                            {/* Device ID */}
                             <h3 className="text-lg font-black font-mono text-white tracking-widest mb-1">
                                 {device.deviceId}
                             </h3>
                             <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-5">Terminal Android POS</p>
 
-                            {/* Stats */}
                             <div className="grid grid-cols-2 gap-3 mb-5">
                                 <div className="bg-black/30 rounded-lg p-3 border border-white/5">
                                     <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Entradas</p>
@@ -159,45 +153,121 @@ export default function DevicesPage() {
                                 </div>
                             </div>
 
-                            {/* Last seen */}
-                            <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-white/5">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-3.5 h-3.5 shrink-0" />
-                                    <span>
-                                        Último: {new Date(device.lastSeen).toLocaleTimeString('pt-BR', {
-                                            hour: '2-digit', minute: '2-digit'
-                                        })}
-                                    </span>
-                                </div>
-                                
-                                {/* Toggle Control */}
-                                <div className="flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-full border border-white/5">
-                                    <span className="text-[9px] font-black uppercase text-gray-400">Ticket Saída</span>
-                                    <button
-                                        onClick={async () => {
-                                            const newVal = !device.requireExitTicket;
-                                            try {
-                                                await fetch(`/api/dashboard/devices/update`, {
-                                                    method: 'POST',
-                                                    body: JSON.stringify({ deviceId: device.deviceId, requireExitTicket: newVal })
-                                                });
-                                                fetchDevices(); // Refresh
-                                            } catch (e) { console.error(e) }
-                                        }}
-                                        className={`w-10 h-5 rounded-full relative transition-colors ${
-                                            device.requireExitTicket ? 'bg-emerald-600' : 'bg-stone-700'
-                                        }`}
-                                    >
-                                        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${
-                                            device.requireExitTicket ? 'right-1' : 'left-1'
-                                        }`} />
-                                    </button>
-                                </div>
+                            <div className="flex items-center justify-between text-[10px] text-gray-500 pt-4 border-t border-white/5">
+                                <span className={device.online ? 'text-emerald-400 font-bold' : 'text-gray-600'}>
+                                    {device.online ? '• ONLINE' : '• OFFLINE'}
+                                </span>
+                                <span>
+                                    Último: {new Date(device.lastSeen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            {/* Config Modal */}
+            {selectedDevice && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-stone-900 border border-white/10 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-black/20">
+                            <div>
+                                <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Configurações de Atendimento</h3>
+                                <p className="text-[10px] text-blue-400 font-mono mt-0.5">TERMINAL: {selectedDevice.deviceId}</p>
+                            </div>
+                            <button onClick={() => setSelectedDevice(null)} className="text-gray-500 hover:text-white">X</button>
+                        </div>
+                        
+                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                            
+                            <ConfigToggle 
+                                label="Saída Automática (Ticket Pago)"
+                                description="Libera o veículo instantaneamente ao ler um ticket já quitado."
+                                checked={selectedDevice.autoRelease}
+                                onChange={(val: boolean) => updateDeviceConfig(selectedDevice.deviceId, { autoRelease: val })}
+                                disabled={saving}
+                            />
+
+                            <ConfigToggle 
+                                label="Imprimir Ticket de Saída"
+                                description="Emite o comprovante térmico obrigatoriamente na saída."
+                                checked={selectedDevice.requireExitTicket}
+                                onChange={(val: boolean) => updateDeviceConfig(selectedDevice.deviceId, { requireExitTicket: val })}
+                                disabled={saving}
+                            />
+
+                            <div className="border-t border-white/5 pt-6">
+                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest block mb-4">Layout do Ticket</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button 
+                                        onClick={() => updateDeviceConfig(selectedDevice.deviceId, { ticketLayout: 'FULL' })}
+                                        className={`p-3 rounded-lg border text-left transition-all ${selectedDevice.ticketLayout === 'FULL' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-black/20 hover:bg-white/5'}`}
+                                    >
+                                        <p className="text-[11px] font-bold text-white">COMPLETO</p>
+                                        <p className="text-[9px] text-gray-500">Logo e detalhes</p>
+                                    </button>
+                                    <button 
+                                        onClick={() => updateDeviceConfig(selectedDevice.deviceId, { ticketLayout: 'COMPACT' })}
+                                        className={`p-3 rounded-lg border text-left transition-all ${selectedDevice.ticketLayout === 'COMPACT' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-black/20 hover:bg-white/5'}`}
+                                    >
+                                        <p className="text-[11px] font-bold text-white">ECONÔMICO</p>
+                                        <p className="text-[9px] text-gray-500">Menos papel</p>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-6">
+                                <ConfigToggle 
+                                    label="Foto na Entrada"
+                                    description="Obrigatório"
+                                    checked={selectedDevice.requireEntryPhoto}
+                                    onChange={(val: boolean) => updateDeviceConfig(selectedDevice.deviceId, { requireEntryPhoto: val })}
+                                    disabled={saving}
+                                    small
+                                />
+                                <ConfigToggle 
+                                    label="Foto na Saída"
+                                    description="Obrigatório"
+                                    checked={selectedDevice.requireExitPhoto}
+                                    onChange={(val: boolean) => updateDeviceConfig(selectedDevice.deviceId, { requireExitPhoto: val })}
+                                    disabled={saving}
+                                    small
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end">
+                            <button 
+                                onClick={() => setSelectedDevice(null)}
+                                className="bg-white text-black px-8 py-2 rounded-lg font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-all"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function ConfigToggle({ label, description, checked, onChange, disabled, small = false }: any) {
+    return (
+        <div className={`flex items-center justify-between gap-4 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="flex-1">
+                <p className={`${small ? 'text-[11px]' : 'text-sm'} font-bold text-white`}>{label}</p>
+                <p className="text-[10px] text-gray-500">{description}</p>
+            </div>
+            <button
+                onClick={() => onChange(!checked)}
+                className={`w-12 h-6 rounded-full relative transition-colors shrink-0 ${
+                    checked ? 'bg-blue-600' : 'bg-stone-800'
+                }`}
+            >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
+                    checked ? 'right-1' : 'left-1'
+                }`} />
+            </button>
         </div>
     )
 }

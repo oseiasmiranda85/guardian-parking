@@ -3,6 +3,7 @@ package com.parking.stone.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -19,6 +20,10 @@ object ConfigManager {
         _requireExitTicket = prefs?.getBoolean("require_exit_ticket", true) ?: true
         _autoRelease = prefs?.getBoolean("auto_release", false) ?: false
         _autoPrintEntry = prefs?.getBoolean("auto_print_entry", false) ?: false
+        _toleranceMinutes = prefs?.getInt("tolerance_minutes", 15) ?: 15
+        _requireEntryPhoto = prefs?.getBoolean("require_entry_photo", true) ?: true
+        _requireExitPhoto = prefs?.getBoolean("require_exit_photo", false) ?: false
+        _ticketLayout = prefs?.getString("ticket_layout", "FULL") ?: "FULL"
         _paymentTiming = PaymentTiming.valueOf(prefs?.getString("payment_timing", "EXIT") ?: "EXIT")
     }
 
@@ -52,6 +57,38 @@ object ConfigManager {
         set(value) {
             _autoPrintEntry = value
             prefs?.edit()?.putBoolean("auto_print_entry", value)?.apply()
+        }
+
+    private var _toleranceMinutes by mutableIntStateOf(15)
+    var toleranceMinutes: Int
+        get() = _toleranceMinutes
+        set(value) {
+            _toleranceMinutes = value
+            prefs?.edit()?.putInt("tolerance_minutes", value)?.apply()
+        }
+
+    private var _requireEntryPhoto by mutableStateOf(true)
+    var requireEntryPhoto: Boolean
+        get() = _requireEntryPhoto
+        set(value) {
+            _requireEntryPhoto = value
+            prefs?.edit()?.putBoolean("require_entry_photo", value)?.apply()
+        }
+
+    private var _requireExitPhoto by mutableStateOf(false)
+    var requireExitPhoto: Boolean
+        get() = _requireExitPhoto
+        set(value) {
+            _requireExitPhoto = value
+            prefs?.edit()?.putBoolean("require_exit_photo", value)?.apply()
+        }
+
+    private var _ticketLayout by mutableStateOf("FULL")
+    var ticketLayout: String
+        get() = _ticketLayout
+        set(value) {
+            _ticketLayout = value
+            prefs?.edit()?.putString("ticket_layout", value)?.apply()
         }
 
     var allowPlateSearch: Boolean = true

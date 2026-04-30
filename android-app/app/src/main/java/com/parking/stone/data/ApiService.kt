@@ -7,7 +7,15 @@ import okhttp3.MultipartBody
 data class LoginResponse(val token: String, val user: UserInfo, val tenant: TenantInfo)
 data class UserInfo(val id: Int, val name: String, val email: String, val role: String)
 data class TenantInfo(val id: Int, val name: String)
-data class DeviceConfig(val requireExitTicket: Boolean)
+data class DeviceConfig(
+    val requireExitTicket: Boolean,
+    val autoRelease: Boolean,
+    val autoPrintEntry: Boolean,
+    val toleranceMinutes: Int,
+    val requireEntryPhoto: Boolean,
+    val requireExitPhoto: Boolean,
+    val ticketLayout: String?
+)
 data class SyncResponse(val success: Boolean, val message: String? = null, val count: Int? = null, val config: DeviceConfig? = null)
 data class StatusResponse(val status: String)
 data class PricingTable(val id: Int, val billingMode: String)

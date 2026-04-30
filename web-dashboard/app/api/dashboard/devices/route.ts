@@ -52,6 +52,11 @@ export async function GET(request: Request) {
                 lastSeen: d.lastSeen?.toISOString() ?? d.lastPing?.toISOString() ?? new Date(0).toISOString(),
                 status: d.status,
                 requireExitTicket: d.requireExitTicket,
+                autoRelease: d.autoRelease,
+                autoPrintEntry: d.autoPrintEntry,
+                toleranceMinutes: d.toleranceMinutes,
+                requireEntryPhoto: d.requireEntryPhoto,
+                requireExitPhoto: d.requireExitPhoto,
                 entryCount: entryCount,
                 exitCount: exitCount,
                 totalOps: entryCount + exitCount

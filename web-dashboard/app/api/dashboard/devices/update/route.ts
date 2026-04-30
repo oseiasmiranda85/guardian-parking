@@ -3,7 +3,16 @@ import { prisma } from '../../../../lib/prisma'
 
 export async function POST(req: Request) {
   try {
-    const { deviceId, requireExitTicket } = await req.json()
+    const { 
+      deviceId, 
+      requireExitTicket,
+      autoRelease,
+      autoPrintEntry,
+      toleranceMinutes,
+      requireEntryPhoto,
+      requireExitPhoto,
+      ticketLayout
+    } = await req.json()
 
     if (!deviceId) {
       return NextResponse.json({ error: 'DeviceId obrigatório' }, { status: 400 })
@@ -11,7 +20,15 @@ export async function POST(req: Request) {
 
     await prisma.device.updateMany({
       where: { posId: deviceId },
-      data: { requireExitTicket }
+      data: { 
+        requireExitTicket,
+        autoRelease,
+        autoPrintEntry,
+        toleranceMinutes,
+        requireEntryPhoto,
+        requireExitPhoto,
+        ticketLayout
+      }
     })
 
     return NextResponse.json({ success: true })

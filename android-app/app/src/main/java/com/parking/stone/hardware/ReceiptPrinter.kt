@@ -52,31 +52,33 @@ class ReceiptPrinter {
         photoPath: String? = null,
         helmetCount: Int = 0
     ): Boolean {
-        val timestamp = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
+        val timestamp = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
         val isMonthly = eventName.contains("MENSALISTA") || eventName.contains("CREDENCIADO") || method == "CREDENTIAL"
         val isCancellation = eventName.contains("CANCEL")
         val isReprint = eventName.contains("VIA") || qrContent.contains("REPRINT")
         val isExit = eventName.contains("SAIDA")
+        val isCompact = com.parking.stone.data.ConfigManager.ticketLayout == "COMPACT"
         
         val header = when {
             isCancellation -> "TICKET CANCELADO"
             isMonthly -> "ACESSO AUTORIZADO"
-            isReprint -> "SEGUNDA VIA DE TICKET"
-            isExit -> "RECIBO DE PAGAMENTO"
+            isReprint -> "SEGUNDA VIA"
+            isExit -> "RECIBO"
             else -> "GUARDIAN PARKING"
         }
         
         val steps = mutableListOf<String>()
         
-        // Simulating: printer.printImage(logo)
-        // Here we send a placeholder logo signal for the dumb robot
-        steps.add("""{"type":"IMAGE","base64":"LOGO","fullWidth":false}""")
+        // Header & Logo
+        if (!isCompact) {
+            steps.add("""{"type":"IMAGE","base64":"LOGO","fullWidth":false}""")
+            steps.add("""{"type":"TEXT","text":"================================\n$header\n================================","align":"CENTER","isBold":true}""")
+            steps.add("""{"type":"SPACE"}""")
+        } else {
+            steps.add("""{"type":"TEXT","text":"$header","align":"CENTER","isBold":true}""")
+        }
         
-        // Simulating: printer.printText(header, align=CENTER)
-        steps.add("""{"type":"TEXT","text":"================================\n$header\n================================","align":"CENTER","isBold":true}""")
-        steps.add("""{"type":"SPACE"}""")
-        
-        if (photoPath != null) {
+        if (photoPath != null && !isCompact) {
             try {
                 val file = java.io.File(photoPath)
                 if (file.exists()) {
@@ -91,12 +93,10 @@ class ReceiptPrinter {
                     val cropY = (originalHeight * 0.2).toInt() // Skip top 20%
                     val cropHeight = (originalHeight * 0.6).toInt() // Take next 60%
                     
-                    // Rotação de 90 graus para corrigir orientação do POS
                     val matrix = android.graphics.Matrix()
                     matrix.postRotate(90f)
                     val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, cropY, originalWidth, cropHeight, matrix, true)
                     
-                    // Scale to 384px width (efficient for thermal printing)
                     val targetWidth = 384
                     val targetHeight = (rotatedBitmap.height * (targetWidth.toFloat() / rotatedBitmap.width)).toInt()
                     val scaledBitmap = android.graphics.Bitmap.createScaledBitmap(rotatedBitmap, targetWidth, targetHeight, true)
@@ -105,53 +105,60 @@ class ReceiptPrinter {
                     scaledBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, out) 
                     val base64 = android.util.Base64.encodeToString(out.toByteArray(), android.util.Base64.NO_WRAP)
                     
-                    // Simulating: printer.printImage(photo)
                     steps.add("""{"type":"IMAGE","base64":"data:image/jpeg;base64,$base64","fullWidth":true}""")
-                    steps.add("""{"type":"TEXT","text":"FOTO REGISTRADA NA ENTRADA","align":"CENTER","isBold":false}""")
-                    steps.add("""{"type":"SPACE"}""")
+                    steps.add("""{"type":"TEXT","text":"FOTO REGISTRADA","align":"CENTER","isBold":false}""")
                 }
             } catch (e: Exception) {}
         }
 
         val details = StringBuilder()
-        if (isMonthly && !isCancellation) {
-            details.append(String.format("CLIENTE: %s\n", qrContent)) 
-            details.append(String.format("PLACA:   %s\n", plate))
-            details.append("VALIDO ATE: 15/05/2026\n") 
+        if (isCompact) {
+            details.append(String.format("PLACA: %s | %s\n", plate, type.take(4).uppercase()))
+            details.append(String.format("DATA:  %s\n", timestamp))
+            details.append(String.format("VALOR: %s | %s", amount, if(method == "PENDENTE") "PEND" else "PAGO"))
         } else {
-            details.append(String.format("EVENTO:  %s\n", eventName))
-            details.append(String.format("DATA:    %s\n", timestamp))
-            details.append(String.format("VEICULO: %s\n", type))
-            details.append(String.format("PLACA:   %s\n", plate))
-            
-            val opName = SessionManager.currentUser?.name?.uppercase() ?: "SISTEMA"
-            details.append(String.format("OPERADOR: %s\n", opName))
+            if (isMonthly && !isCancellation) {
+                details.append(String.format("CLIENTE: %s\n", qrContent)) 
+                details.append(String.format("PLACA:   %s\n", plate))
+                details.append("VALIDO ATE: 15/05/2026\n") 
+            } else {
+                details.append(String.format("EVENTO:  %s\n", eventName))
+                details.append(String.format("DATA:    %s\n", timestamp))
+                details.append(String.format("VEICULO: %s\n", type))
+                details.append(String.format("PLACA:   %s\n", plate))
+                
+                val opName = SessionManager.currentUser?.name?.uppercase() ?: "SISTEMA"
+                details.append(String.format("OPERADOR: %s\n", opName))
 
-            if (type.uppercase().contains("MOTO") && helmetCount > 0) {
-                details.append(String.format("CAPACETES: %d\n", helmetCount))
+                if (type.uppercase().contains("MOTO") && helmetCount > 0) {
+                    details.append(String.format("CAPACETES: %d\n", helmetCount))
+                }
+                
+                details.append(String.format("VALOR:   %s\n", amount))
+                
+                val statusLabel = when {
+                    isCancellation -> "CANCELADO"
+                    method == "PENDENTE" || method == "A PAGAR" -> "PENDENTE"
+                    else -> "PAGO"
+                }
+                details.append(String.format("PAGTO:   %s", statusLabel))
             }
-            
-            details.append(String.format("VALOR:   %s\n", amount))
-            
-            val statusLabel = when {
-                isCancellation -> "CANCELADO"
-                method == "PENDENTE" || method == "A PAGAR" -> "PENDENTE"
-                else -> "PAGO"
-            }
-            details.append(String.format("PAGTO:   %s", statusLabel))
         }
         
         steps.add("""{"type":"TEXT","text":${escapeJson(details.toString())},"align":"LEFT","isBold":true}""")
-        steps.add("""{"type":"SPACE"}""")
 
         if (!isMonthly || isCancellation) {
-            // Simulating: printer.printQrCode(qrContent)
+            if (!isCompact) steps.add("""{"type":"SPACE"}""")
             steps.add("""{"type":"QRCODE","data":"$qrContent"}""")
-            val qrSub = if(isExit || isCancellation) "COMPROVANTE" else "VALIDACAO DE SAIDA"
-            steps.add("""{"type":"TEXT","text":"$qrSub\n================================","align":"CENTER","isBold":true}""")
+            if (!isCompact) {
+                val qrSub = if(isExit || isCancellation) "COMPROVANTE" else "VALIDACAO DE SAIDA"
+                steps.add("""{"type":"TEXT","text":"$qrSub\n================================","align":"CENTER","isBold":true}""")
+            }
         }
 
-        steps.add("""{"type":"TEXT","text":"TERM: ${com.parking.stone.data.DeviceManager.displayName}","align":"CENTER","isBold":true}""")
+        if (!isCompact) {
+            steps.add("""{"type":"TEXT","text":"TERM: ${com.parking.stone.data.DeviceManager.displayName}","align":"CENTER","isBold":true}""")
+        }
 
         val jsonBuilder = StringBuilder()
         jsonBuilder.append("{")

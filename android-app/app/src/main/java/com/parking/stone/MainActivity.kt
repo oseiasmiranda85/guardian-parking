@@ -70,8 +70,5 @@ fun ParkingAppNavHost() {
         composable(com.parking.stone.ui.Routes.REPRINT_TICKET) {
             com.parking.stone.ui.screens.ReprintTicketScreen(navController)
         }
-        composable(com.parking.stone.ui.Routes.SETTINGS) {
-            com.parking.stone.ui.screens.SettingsScreen(navController)
-        }
     }
 }

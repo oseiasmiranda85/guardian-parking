@@ -13,7 +13,8 @@ import {
     LogOut,
     Monitor,
     LayoutDashboard,
-    MapPin
+    MapPin,
+    Settings
 } from 'lucide-react'
 
 const MenuLink = ({ href, icon: Icon, children }: any) => {
@@ -214,6 +215,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                             <MenuLink href="/users" icon={Users}>Usuários e Perfis</MenuLink>
 
                             <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1 mt-4 px-4">Sistema</div>
+                            <MenuLink href="/settings/attendance" icon={Settings}>Configurações de Atendimento</MenuLink>
                             <MenuLink href="/devices" icon={Monitor}>Dispositivos</MenuLink>
                             <MenuLink href="/reports" icon={FileText}>Relatórios</MenuLink>
                         </>

@@ -50,7 +50,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ 
             success: true,
             config: {
-                requireExitTicket: device.requireExitTicket
+                requireExitTicket: device.requireExitTicket,
+                autoRelease: device.autoRelease,
+                autoPrintEntry: device.autoPrintEntry,
+                toleranceMinutes: device.toleranceMinutes,
+                requireEntryPhoto: device.requireEntryPhoto,
+                requireExitPhoto: device.requireExitPhoto,
+                ticketLayout: device.ticketLayout
             }
         })
 

@@ -64,6 +64,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
     var calculatedFee by remember { mutableStateOf(0.0) }
     var durationString by remember { mutableStateOf("") }
     var isRefundVoucher by remember { mutableStateOf(false) }
+    var exitPhotoCaptured by remember { mutableStateOf(false) }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -150,7 +151,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                         // Otherwise, force conference mode for manual confirmation
                                         foundEntry = entry
                                         val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-                                        isRefundVoucher = totalMinutesLocal <= 15
+                                        isRefundVoucher = totalMinutesLocal <= com.parking.stone.data.ConfigManager.toleranceMinutes
                                         val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
                                         
                                         calculatedFee = if (entry.isPaid) 0.0
@@ -243,8 +244,8 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                         
                                         foundEntry = entry
                                         
-                                        // LOGIC: 15 Minutes Tolerance / Refund
-                                        isRefundVoucher = totalMinutesLocal <= 15
+                                        // LOGIC: Dynamic Tolerance / Refund
+                                        isRefundVoucher = totalMinutesLocal <= com.parking.stone.data.ConfigManager.toleranceMinutes
                                         
                                         if (isRefundVoucher) {
                                             if (entry.isPaid) {
@@ -322,7 +323,28 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                         val item = filtered[i]
                         Card(
                             colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
-                            onClick = { query = item.plate },
+                            onClick = { 
+                                scope.launch {
+                                    val entry = db.parkingDao().getActiveEntryByPlate(item.plate, SessionManager.tenantId)
+                                    if (entry != null) {
+                                        val now = System.currentTimeMillis()
+                                        val durationMillis = now - entry.entryTime
+                                        val hours = TimeUnit.MILLISECONDS.toHours(durationMillis)
+                                        val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
+                                        durationString = "${hours}h ${minutes}min"
+                                        isRefundVoucher = TimeUnit.MILLISECONDS.toMinutes(durationMillis) <= com.parking.stone.data.ConfigManager.toleranceMinutes
+                                        
+                                        // Calculation
+                                        val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
+                                        calculatedFee = if (entry.isPaid) 0.0
+                                                       else if (isRefundVoucher) 0.0 
+                                                       else if (entry.category == "CREDENCIADO") 0.0 
+                                                       else (if (entry.type == "Moto") 10.0 + (calculatedHours * 2.0) else 15.0 + (calculatedHours * 5.0))
+                                        
+                                        foundEntry = entry
+                                    }
+                                }
+                            },
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -395,6 +417,28 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                             FilterChip(selected = paymentMethod == key, onClick = { paymentMethod = key }, label = { Text(label) }, colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = Color.Black))
                         }
                     }
+                if (com.parking.stone.data.ConfigManager.requireExitPhoto) {
+                    Text("Foto de Saída (OBRIGATÓRIA)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                    Button(
+                        onClick = { 
+                            // In a real implementation, we would open a camera dialog here.
+                            // For this demo, we'll simulate success.
+                            exitPhotoCaptured = true
+                            android.widget.Toast.makeText(context, "Foto de saída capturada!", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = if(exitPhotoCaptured) Color.Green else MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.CameraAlt, null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if(exitPhotoCaptured) "FOTO REGISTRADA" else "CAPTURAR FOTO DE SAÍDA")
+                    }
+                    
+                    if (!exitPhotoCaptured) {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f)), modifier = Modifier.fillMaxWidth()) {
+                             Text("Atenção: A foto de saída é obrigatória para este terminal.", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                        }
+                    }
                 } else if (isRefundVoucher) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f)), modifier = Modifier.fillMaxWidth()) {
                          Text("TOLERÂNCIA: Emitir voucher de estorno.", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
@@ -408,6 +452,10 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                     
                     Button(
                         onClick = {
+                             if (com.parking.stone.data.ConfigManager.requireExitPhoto && !exitPhotoCaptured) {
+                                 android.widget.Toast.makeText(context, "FOTO DE SAÍDA OBRIGATÓRIA", android.widget.Toast.LENGTH_LONG).show()
+                                 return@Button
+                             }
                              isProcessing = true
                              scope.launch {
                                  var success = false

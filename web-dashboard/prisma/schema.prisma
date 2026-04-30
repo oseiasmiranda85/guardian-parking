@@ -107,19 +107,25 @@ model TenantUser {
 }
 
 model Device {
-  id          Int       @id @default(autoincrement())
-  tenantId    Int
-  name        String
-  posId       String?   // Formato POS-XXXXXXXX gerado pelo Android ID
-  ipAddress   String?
-  macAddress  String?
-  type        String
-  status      String
-  lastPing    DateTime?
-  lastSeen    DateTime?
-  opsToday    Int       @default(0)
-  requireExitTicket Boolean @default(true)
-  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  id                Int       @id @default(autoincrement())
+  tenantId          Int
+  name              String
+  posId             String?   // Formato POS-XXXXXXXX gerado pelo Android ID
+  ipAddress         String?
+  macAddress        String?
+  type              String
+  lastPing          DateTime?
+  lastSeen          DateTime?
+  opsToday          Int       @default(0)
+  requireExitTicket Boolean   @default(true)
+  autoRelease       Boolean   @default(false)
+  autoPrintEntry    Boolean   @default(false)
+  toleranceMinutes  Int       @default(15)
+  requireEntryPhoto Boolean   @default(true)
+  requireExitPhoto  Boolean   @default(false)
+  status            String    @default("OFFLINE") // ONLINE, OFFLINE
+  ticketLayout      String    @default("FULL")    // COMPACT, FULL
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
 }
 
 model Vehicle {

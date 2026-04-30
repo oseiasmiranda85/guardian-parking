@@ -108,7 +108,13 @@ class XSync(private val dao: ParkingDao) {
             // Sync remote config
             response.config?.let { config ->
                 ConfigManager.requireExitTicket = config.requireExitTicket
-                Log.d("XSync", "Config synced from Portal: requireExitTicket=${config.requireExitTicket}")
+                ConfigManager.autoRelease = config.autoRelease
+                ConfigManager.autoPrintEntry = config.autoPrintEntry
+                ConfigManager.toleranceMinutes = config.toleranceMinutes
+                ConfigManager.requireEntryPhoto = config.requireEntryPhoto
+                ConfigManager.requireExitPhoto = config.requireExitPhoto
+                ConfigManager.ticketLayout = config.ticketLayout ?: "FULL"
+                Log.d("XSync", "Config synced from Portal: release=${config.autoRelease}, tol=${config.toleranceMinutes}")
             }
             
             Log.d("XSync", "Device heartbeat: ${DeviceManager.deviceId} operator=${user.name} -> success=${response.success}")

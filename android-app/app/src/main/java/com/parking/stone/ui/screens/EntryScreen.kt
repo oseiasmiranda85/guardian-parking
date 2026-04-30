@@ -409,12 +409,21 @@ fun EntryScreen(navController: NavController) {
                                          matrix.postRotate(image.imageInfo.rotationDegrees.toFloat())
                                          val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
                                          
+                                         // Optimize for OCR: Scale down before processing
+                                         val scale = 0.5f
+                                         val ocrBitmap = android.graphics.Bitmap.createScaledBitmap(
+                                             rotatedBitmap, 
+                                             (rotatedBitmap.width * scale).toInt(), 
+                                             (rotatedBitmap.height * scale).toInt(), 
+                                             false
+                                         )
+                                         
                                          capturedBitmap = rotatedBitmap
                                          image.close()
 
                                          // OCR on the static image
                                          scope.launch {
-                                             val visionImage = com.google.mlkit.vision.common.InputImage.fromBitmap(rotatedBitmap, 0)
+                                             val visionImage = com.google.mlkit.vision.common.InputImage.fromBitmap(ocrBitmap, 0)
                                              val recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.latin.TextRecognizerOptions.DEFAULT_OPTIONS)
                                              recognizer.process(visionImage)
                                                  .addOnSuccessListener { visionText ->
@@ -514,12 +523,15 @@ fun EntryScreen(navController: NavController) {
             // Confirm Button
             Button(
                 onClick = { 
+                    if (com.parking.stone.data.ConfigManager.requireEntryPhoto && capturedBitmap == null) {
+                        android.widget.Toast.makeText(context, "FOTO OBRIGATÓRIA PELO PORTAL", android.widget.Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
                     if (detectedPlate.isNotEmpty() && !isProcessing) {
                         isProcessing = true
                         val currentAmount = if (isPrePaid) (if (vehicleType == "Moto") 10.0 else 20.0) else 0.0
                         
                         val photoFile = java.io.File(context.filesDir, "plate_${System.currentTimeMillis()}.jpg")
-                        val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
                         
                         val saveAndPrint = { finalPhotoPath: String? ->
                             scope.launch {
@@ -547,20 +559,14 @@ fun EntryScreen(navController: NavController) {
                                     printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", newId.toString(), finalPhotoPath, entry.helmets)
                                     
                                     // Trigger Sync (Fire and forget)
-                                    try {
-                                        val repo = com.parking.stone.data.XSync(db.parkingDao())
-                                        val result = repo.syncTickets(context)
-                                        val sessionResult = repo.syncSessions()
-                                        
-                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                            if (result && sessionResult) {
-                                                android.widget.Toast.makeText(context, "Sincronizado com o Portal!", android.widget.Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                android.widget.Toast.makeText(context, "Salvo localmente (Sincronismo pendente).", android.widget.Toast.LENGTH_LONG).show()
-                                            }
+                                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                        try {
+                                            val repo = com.parking.stone.data.XSync(db.parkingDao())
+                                            repo.syncTickets(context)
+                                            repo.syncSessions()
+                                        } catch(e: Exception) { 
+                                            Log.e("Sync", "Auto-sync failed: ${e.message}")
                                         }
-                                    } catch(e: Exception) { 
-                                        Log.e("Sync", "Auto-sync failed: ${e.message}")
                                     }
                                     
                                     showSuccessDialog = true
@@ -572,7 +578,22 @@ fun EntryScreen(navController: NavController) {
                             }
                         }
 
-                        if (imageCapture != null) {
+                        if (capturedBitmap != null) {
+                            // FAST PATH: Save the already captured bitmap
+                            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                try {
+                                    val out = java.io.FileOutputStream(photoFile)
+                                    capturedBitmap!!.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out)
+                                    out.flush()
+                                    out.close()
+                                    saveAndPrint(photoFile.absolutePath)
+                                } catch(e: Exception) {
+                                    saveAndPrint(null)
+                                }
+                            }
+                        } else if (imageCapture != null) {
+                            // SLOW PATH: Manual entry but need photo
+                            val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
                             imageCapture!!.takePicture(
                                 outputOptions,
                                 androidx.core.content.ContextCompat.getMainExecutor(context),
@@ -581,7 +602,6 @@ fun EntryScreen(navController: NavController) {
                                         saveAndPrint(photoFile.absolutePath)
                                     }
                                     override fun onError(exc: androidx.camera.core.ImageCaptureException) {
-                                        Log.e("Camera", "Photo failed: ${exc.message}")
                                         saveAndPrint(null)
                                     }
                                 }
