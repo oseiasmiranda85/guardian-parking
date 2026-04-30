@@ -13,6 +13,28 @@ object PricingManager {
         return if (type.lowercase() == "moto") motoPricing else carPricing
     }
 
+    fun calculateAtEntry(type: String): Double {
+        val now = System.currentTimeMillis()
+        val pricing = getPricingForType(type)
+        if (pricing == null || pricing.slots.isEmpty()) {
+            return if (type.lowercase() == "moto") 10.0 else 20.0 // Legacy fallback
+        }
+
+        if (pricing.type == "FIXED_TIME") {
+            val sdf = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+            val currentTimeStr = sdf.format(java.util.Date(now))
+            
+            val matchingSlot = pricing.slots.find { slot ->
+                if (slot.startTime == null || slot.endTime == null) return@find false
+                isTimeBetween(currentTimeStr, slot.startTime, slot.endTime)
+            }
+            return matchingSlot?.price ?: 0.0
+        }
+        
+        // For DURATION (Postpaid) at entry, price is usually 0 unless there's an entry fee
+        return 0.0
+    }
+
     /**
      * Calculates the fee and checks if it's a refund/courtesy based on the pricing table.
      * Returns Triple(amount, isRefund, durationDescription)

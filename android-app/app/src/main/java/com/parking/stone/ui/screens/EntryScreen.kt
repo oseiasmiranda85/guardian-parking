@@ -474,7 +474,7 @@ fun EntryScreen(navController: NavController) {
             // Payment Method (PrePaid)
             val isPrePaid = com.parking.stone.data.ConfigManager.paymentTiming == com.parking.stone.data.ConfigManager.PaymentTiming.ENTRY
             if (isPrePaid) {
-                  val displayAmount = if (vehicleType == "Moto") 10.0 else 20.0
+                  val displayAmount = com.parking.stone.data.PricingManager.calculateAtEntry(vehicleType)
                   
                   Card(
                       colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
@@ -530,7 +530,7 @@ fun EntryScreen(navController: NavController) {
                     }
                     if (detectedPlate.isNotEmpty() && !isProcessing) {
                         isProcessing = true
-                        val currentAmount = if (isPrePaid) (if (vehicleType == "Moto") 10.0 else 20.0) else 0.0
+                        val currentAmount = if (isPrePaid) com.parking.stone.data.PricingManager.calculateAtEntry(vehicleType) else 0.0
                         saveEntryWithPhoto(
                             context = context,
                             scope = scope,
