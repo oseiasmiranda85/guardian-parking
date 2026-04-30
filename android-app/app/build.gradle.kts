@@ -13,8 +13,8 @@ android {
         applicationId = "com.parking.stone"
         minSdk = 26 // Stone P2 is usually Android 7/8+, 26 (Oreo) is safe
         targetSdk = 34
-        versionCode = 29
-        versionName = "1.8.6"
+        versionCode = 30
+        versionName = "1.8.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

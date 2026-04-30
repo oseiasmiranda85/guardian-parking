@@ -83,13 +83,26 @@ class ReceiptPrinter {
                     val bytes = file.readBytes()
                     val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     
+                    // Resize and Crop for Thermal Printer Efficiency
+                    val originalWidth = bitmap.width
+                    val originalHeight = bitmap.height
+                    
+                    // Focus on the middle/lower part (where the plate usually is)
+                    val cropY = (originalHeight * 0.2).toInt() // Skip top 20%
+                    val cropHeight = (originalHeight * 0.6).toInt() // Take next 60%
+                    
                     // Rotação de 90 graus para corrigir orientação do POS
                     val matrix = android.graphics.Matrix()
                     matrix.postRotate(90f)
-                    val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                    val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, cropY, originalWidth, cropHeight, matrix, true)
+                    
+                    // Scale to 384px width (efficient for thermal printing)
+                    val targetWidth = 384
+                    val targetHeight = (rotatedBitmap.height * (targetWidth.toFloat() / rotatedBitmap.width)).toInt()
+                    val scaledBitmap = android.graphics.Bitmap.createScaledBitmap(rotatedBitmap, targetWidth, targetHeight, true)
                     
                     val out = java.io.ByteArrayOutputStream()
-                    rotatedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 40, out) 
+                    scaledBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, out) 
                     val base64 = android.util.Base64.encodeToString(out.toByteArray(), android.util.Base64.NO_WRAP)
                     
                     // Simulating: printer.printImage(photo)

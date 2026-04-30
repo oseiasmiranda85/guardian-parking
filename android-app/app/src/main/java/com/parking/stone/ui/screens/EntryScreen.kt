@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ fun EntryScreen(navController: NavController) {
     var paymentMethod by remember { mutableStateOf("CREDIT") }
     var isProcessing by remember { mutableStateOf(false) }
     var imageCapture by remember { mutableStateOf<androidx.camera.core.ImageCapture?>(null) }
+    var capturedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     
     // Plate Input State
     var isLegacyPlate by remember { mutableStateOf(false) } // Mercosul (Default) vs Legacy
@@ -266,15 +268,27 @@ fun EntryScreen(navController: NavController) {
     Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // Camera Preview Section (Fixed Height)
         Box(modifier = Modifier.weight(0.8f).fillMaxWidth()) {
-            if (cameraActive) {
+            if (cameraActive && capturedBitmap == null) {
                 CameraPreview(
                     flashEnabled = flashEnabled,
-                    onPlateDetected = { plate ->
-                        resetInactivity()
-                        if (detectedPlate.isEmpty()) detectedPlate = plate
-                    },
+                    onPlateDetected = { /* Real-time disabled as requested */ },
                     onCaptureReady = { capture -> imageCapture = capture }
                 )
+            } else if (capturedBitmap != null) {
+                androidx.compose.foundation.Image(
+                    bitmap = capturedBitmap!!.asImageBitmap(),
+                    contentDescription = "Captured Plate",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                // Retake button
+                IconButton(
+                    onClick = { capturedBitmap = null; resetInactivity() },
+                    modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Red.copy(alpha = 0.8f))
+                ) {
+                    Icon(Icons.Default.Sync, contentDescription = "Refazer", tint = Color.White)
+                }
             } else {
                 Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray), contentAlignment = Alignment.Center) {
                     Button(onClick = { resetInactivity() }) {
@@ -286,21 +300,25 @@ fun EntryScreen(navController: NavController) {
             }
             
             // Overlays
-            Box(
-                modifier = Modifier
-                    .size(300.dp, 100.dp)
-                    .align(Alignment.Center)
-                    .border(2.dp, if(cameraActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Gray, RoundedCornerShape(12.dp))
-            )
+            if (capturedBitmap == null) {
+                Box(
+                    modifier = Modifier
+                        .size(300.dp, 100.dp)
+                        .align(Alignment.Center)
+                        .border(2.dp, if(cameraActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Gray, RoundedCornerShape(12.dp))
+                )
+            }
 
             // Flash Toggle
-            FloatingActionButton(
-                onClick = { flashEnabled = !flashEnabled; resetInactivity() },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-                containerColor = if (flashEnabled) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.6f),
-                contentColor = if (flashEnabled) Color.Black else Color.White
-            ) {
-                Icon(if(flashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff, contentDescription = "Flash")
+            if (capturedBitmap == null) {
+                FloatingActionButton(
+                    onClick = { flashEnabled = !flashEnabled; resetInactivity() },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                    containerColor = if (flashEnabled) MaterialTheme.colorScheme.primary else Color.Black.copy(alpha = 0.6f),
+                    contentColor = if (flashEnabled) Color.Black else Color.White
+                ) {
+                    Icon(if(flashEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff, contentDescription = "Flash")
+                }
             }
             
             IconButton(
@@ -375,12 +393,57 @@ fun EntryScreen(navController: NavController) {
                 // Photo Capture Button (Icon only)
                 IconButton(
                     onClick = { 
-                        // Mock Photo Capture or Trigger logic
-                         android.widget.Toast.makeText(context, "Foto Capturada!", android.widget.Toast.LENGTH_SHORT).show()
+                         if (imageCapture != null && !isProcessing) {
+                             isProcessing = true
+                             imageCapture!!.takePicture(
+                                 Executors.newSingleThreadExecutor(),
+                                 object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
+                                     override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
+                                         val buffer = image.planes[0].buffer
+                                         val bytes = ByteArray(buffer.remaining())
+                                         buffer.get(bytes)
+                                         val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                         
+                                         // Fix rotation
+                                         val matrix = android.graphics.Matrix()
+                                         matrix.postRotate(image.imageInfo.rotationDegrees.toFloat())
+                                         val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                                         
+                                         capturedBitmap = rotatedBitmap
+                                         image.close()
+
+                                         // OCR on the static image
+                                         scope.launch {
+                                             val visionImage = com.google.mlkit.vision.common.InputImage.fromBitmap(rotatedBitmap, 0)
+                                             val recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.latin.TextRecognizerOptions.DEFAULT_OPTIONS)
+                                             recognizer.process(visionImage)
+                                                 .addOnSuccessListener { visionText ->
+                                                     val platePattern = Regex("[A-Z]{3}[0-9][A-Z0-9][0-9]{2}")
+                                                     val oldPattern = Regex("[A-Z]{3}[0-9]{4}")
+                                                     
+                                                     visionText.textBlocks.forEach { block ->
+                                                         block.lines.forEach { line ->
+                                                             val text = line.text.uppercase().replace("-", "").replace(" ", "")
+                                                             if (platePattern.find(text) != null || oldPattern.find(text) != null) {
+                                                                 detectedPlate = text.take(7)
+                                                             }
+                                                         }
+                                                     }
+                                                     isProcessing = false
+                                                 }
+                                                 .addOnFailureListener { isProcessing = false }
+                                         }
+                                     }
+                                     override fun onError(exc: androidx.camera.core.ImageCaptureException) {
+                                         isProcessing = false
+                                     }
+                                 }
+                             )
+                         }
                     },
-                    modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                    modifier = Modifier.size(56.dp).background(if(capturedBitmap != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                 ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Capturar Foto", tint = Color.White)
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Capturar Foto", tint = if(capturedBitmap != null) Color.Black else Color.White)
                 }
             }
 
@@ -479,9 +542,9 @@ fun EntryScreen(navController: NavController) {
                                         tenantId = com.parking.stone.data.SessionManager.tenantId,
                                         deviceId = com.parking.stone.data.DeviceManager.deviceId
                                     )
-                                    db.parkingDao().insertEntry(entry)
+                                    val newId = db.parkingDao().insertEntry(entry)
                                     val printer = com.parking.stone.hardware.ReceiptPrinter()
-                                    printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", entry.plate, finalPhotoPath, entry.helmets)
+                                    printer.printEntryTicket("ESTACIONAMENTO", entry.plate, entry.type, "R$ ${String.format("%.2f", currentAmount)}", if(isPrePaid) "PAGO" else "A PAGAR", newId.toString(), finalPhotoPath, entry.helmets)
                                     
                                     // Trigger Sync (Fire and forget)
                                     try {

@@ -168,7 +168,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <aside className="w-64 flex-none bg-stone-900 border-r border-white/10 flex flex-col z-20 print:hidden">
                 <div className="p-4 border-b border-white/10 shrink-0">
                     <h1 className="text-xl font-bold text-stone-500 flex items-center gap-2">
-                        <img src="/logo-guardian.png" className="w-8 h-8 invert" alt="Logo" />
+                        <img src="/logo-guardian.png" className="w-8 h-8" style={{ filter: 'invert(69%) sepia(87%) saturate(456%) hue-rotate(105deg) brightness(101%) contrast(101%)' }} alt="Logo" />
                         GUARDIAN
                     </h1>
                     {currentTenantName && (
