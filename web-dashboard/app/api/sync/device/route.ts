@@ -19,29 +19,33 @@ export async function POST(request: Request) {
 
         const now = new Date()
 
-        // Upsert device: create on first login, update lastSeen on heartbeat
-        const device = await prisma.device.upsert({
-            where: {
-                id: (await prisma.device.findFirst({
-                    where: { posId: deviceId, tenantId: tid }
-                }))?.id ?? 0
-            },
-            update: {
-                status: 'ONLINE',
-                lastSeen: now,
-                lastPing: now,
-                name: operatorName ? `POS ${operatorName}` : deviceId,
-            },
-            create: {
-                tenantId: tid,
-                posId: deviceId,
-                name: operatorName ? `POS ${operatorName}` : deviceId,
-                type: 'ANDROID_POS',
-                status: 'ONLINE',
-                lastSeen: now,
-                lastPing: now,
-            }
+        // Robust device heartbeat logic
+        let device = await prisma.device.findFirst({
+            where: { posId: deviceId, tenantId: tid }
         })
+
+        const deviceData = {
+            status: 'ONLINE',
+            lastSeen: now,
+            lastPing: now,
+            name: operatorName ? `POS ${operatorName}` : (device?.name || deviceId),
+            type: 'ANDROID_POS',
+        }
+
+        if (device) {
+            device = await prisma.device.update({
+                where: { id: device.id },
+                data: deviceData
+            })
+        } else {
+            device = await prisma.device.create({
+                data: {
+                    ...deviceData,
+                    tenantId: tid,
+                    posId: deviceId,
+                }
+            })
+        }
 
         return NextResponse.json({ 
             success: true,

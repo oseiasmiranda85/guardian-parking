@@ -168,11 +168,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <aside className="w-64 flex-none bg-stone-900 border-r border-white/10 flex flex-col z-20 print:hidden">
                 <div className="p-4 border-b border-white/10 shrink-0">
                     <h1 className="text-xl font-bold text-stone-500 flex items-center gap-2">
-                        <div className="w-8 h-8 bg-stone-500 rounded flex items-center justify-center text-black font-bold">G</div>
+                        <img src="/logo-guardian.png" className="w-8 h-8 brightness-0 invert sepia(1) saturate(100) hue-rotate(90deg)" style={{ filter: 'invert(69%) sepia(87%) saturate(456%) hue-rotate(105deg) brightness(101%) contrast(101%)' }} alt="Logo" />
                         GUARDIAN
                     </h1>
                     {currentTenantName && (
-                        <div className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 truncate bg-emerald-500/5 px-2 py-1 rounded inline-block max-w-full">
+                        <div className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-stone-500 truncate bg-stone-500/5 px-2 py-1 rounded inline-block max-w-full">
                             {currentTenantName}
                         </div>
                     )}
@@ -229,7 +229,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                         <span className="text-gray-700">/</span>
                         {currentTenantName && (
                             <>
-                                <span className="text-emerald-500/80 font-black italic tracking-tighter">{currentTenantName}</span>
+                                <span className="text-stone-500/80 font-black italic tracking-tighter">{currentTenantName}</span>
                                 <span className="text-gray-700">/</span>
                             </>
                         )}

@@ -10,8 +10,8 @@ const config: Config = {
         extend: {
             colors: {
                 stone: {
-                    500: '#23C768', // Brand Green
-                    600: '#00A868',
+                    500: '#00DF81', // Vibrant Green
+                    600: '#00C874',
                     900: '#121212'
                 },
                 dark: '#1E1E1E'

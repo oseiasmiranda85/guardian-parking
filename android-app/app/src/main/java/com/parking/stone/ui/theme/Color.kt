@@ -2,7 +2,7 @@ package com.parking.stone.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryGreen = Color(0xFF23C768) // Neon Green from Mockup
+val PrimaryGreen = Color(0xFF00DF81) // Vibrant Green from User Request
 val DarkBackground = Color(0xFF121212) // Deep Black
 val SurfaceDark = Color(0xFF1E1E1E) // Card Background
 val TextWhite = Color(0xFFFFFFFF)
