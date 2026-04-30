@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react'
-import { Clock, Plus, Save, Trash2, AlertCircle, CheckCircle, Tag, Pencil, Car, Calendar, DollarSign, Ban } from 'lucide-react'
+import { Clock, Plus, Save, Trash2, AlertCircle, CheckCircle, Tag, Pencil, Car, Calendar, DollarSign, Ban, Copy } from 'lucide-react'
 
 export default function PricingPage() {
     const [tables, setTables] = useState<any[]>([])
@@ -178,6 +178,23 @@ export default function PricingPage() {
         }
     }
 
+    const handleCopy = async (id: number, e: React.MouseEvent) => {
+        e.stopPropagation() // Prevent selecting the table while copying
+        if (!confirm('Deseja criar uma cópia desta tabela?')) return
+
+        try {
+            const res = await fetch(`/api/pricing/${id}/copy`, { method: 'POST' })
+            if (!res.ok) throw new Error(await res.text())
+            
+            const newTable = await res.json()
+            alert('Cópia criada como rascunho!')
+            fetchTables()
+            selectTable(newTable)
+        } catch (error: any) {
+            setErrorMsg('Erro ao copiar: ' + error.message)
+        }
+    }
+
     const handleDelete = async () => {
         if (!selectedTableId) return
         if (!confirm('ATENÇÃO: Deseja mesmo excluir esta tabela?\nIsso não afetará os tickets passados criados sob ela.')) return
@@ -231,7 +248,12 @@ export default function PricingPage() {
                                         <div className={`font-bold ${selectedTableId === table.id ? 'text-white' : 'text-gray-300'}`}>{table.name}</div>
                                         <div className="text-xs text-stone-500 font-mono mt-1">{table.billingMode === 'PREPAID' ? 'PRÉ-PAGO / FIXO' : 'ROTATIVO'}</div>
                                     </div>
-                                    {table.isActive && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={(e) => handleCopy(table.id, e)} className="p-2 hover:bg-white/10 rounded-lg text-stone-500 hover:text-white transition" title="Copiar Tabela">
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                        {table.isActive && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                                    </div>
                                 </button>
                             ))}
                             {tables.filter(t => t.vehicleType === 'CAR').length === 0 && <div className="p-4 text-center text-sm text-stone-600">Nenhum criado.</div>}
@@ -251,7 +273,12 @@ export default function PricingPage() {
                                         <div className={`font-bold ${selectedTableId === table.id ? 'text-white' : 'text-gray-300'}`}>{table.name}</div>
                                         <div className="text-xs text-stone-500 font-mono mt-1">{table.billingMode === 'PREPAID' ? 'PRÉ-PAGO / FIXO' : 'ROTATIVO'}</div>
                                     </div>
-                                    {table.isActive && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={(e) => handleCopy(table.id, e)} className="p-2 hover:bg-white/10 rounded-lg text-stone-500 hover:text-white transition" title="Copiar Tabela">
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                        {table.isActive && <CheckCircle className="w-5 h-5 text-emerald-500" />}
+                                    </div>
                                 </button>
                             ))}
                             {tables.filter(t => t.vehicleType === 'MOTO').length === 0 && <div className="p-4 text-center text-sm text-stone-600">Nenhum criado.</div>}
