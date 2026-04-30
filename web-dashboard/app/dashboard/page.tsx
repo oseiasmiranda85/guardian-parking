@@ -502,8 +502,11 @@ export default function Dashboard() {
                                                 'CREDIT': 'Cartão de Crédito',
                                                 'DEBIT': 'Cartão de Débito',
                                                 'CASH': 'Dinheiro',
-                                                'PIX': 'Pix'
-                                            } as Record<string, string>)[item.method] || item.method}
+                                                'PIX': 'Pix',
+                                                'DINHEIRO': 'Dinheiro',
+                                                'CRÉDITO': 'Cartão de Crédito',
+                                                'DÉBITO': 'Cartão de Débito'
+                                            } as Record<string, string>)[item.method.toUpperCase()] || item.method}
                                         </span>
                                         <span className="text-white font-black group-hover:text-emerald-400 transition-colors">
                                             {item.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
@@ -532,15 +535,26 @@ export default function Dashboard() {
                     
                     <div className="flex-1 flex items-center gap-8 px-4">
                         <div className="flex-1 space-y-4">
-                            {opStats.flow.byVehicleType?.map((item: any) => (
-                                <div key={item.type} className="bg-black/30 p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-blue-500/50 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                        <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">{item.type}</span>
+                            {opStats.flow.byVehicleType?.map((item: any) => {
+                                const rawType = item.vehicleType || 'CAR';
+                                const translatedType = ({
+                                    'CAR': 'CARROS',
+                                    'MOTORCYCLE': 'MOTOS',
+                                    'MOTO': 'MOTOS',
+                                    'VAN': 'UTILITÁRIOS',
+                                    'TRUCK': 'CAMINHÕES'
+                                } as Record<string, string>)[rawType] || 'CARROS';
+                                
+                                return (
+                                    <div key={rawType} className="bg-black/30 p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-blue-500/50 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                            <span className="text-[10px] font-black uppercase text-gray-500 tracking-widest">{translatedType}</span>
+                                        </div>
+                                        <span className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors">{item._count.id}</span>
                                     </div>
-                                    <span className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors">{item._count.id}</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="flex-none w-40 h-40 rounded-full border-[12px] border-stone-800 flex items-center justify-center relative shadow-[0_0_50px_rgba(59,130,246,0.1)]">
                              <div className="absolute inset-0 rounded-full border-[12px] border-blue-500 border-t-transparent opacity-20 animate-spin-slow"></div>

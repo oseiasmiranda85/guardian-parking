@@ -19,6 +19,9 @@ export async function GET(request: Request) {
             where: {
                 tenantId: tid,
                 amount: { gt: 0 } // Income only
+            },
+            include: {
+                ticket: true
             }
         })
 
@@ -71,39 +74,51 @@ export async function GET(request: Request) {
         })
         const revenueByHour = Array.from(revenueByHourMap.values())
 
-        // --- Payment Methods ---
+        // --- Payment Methods (Translated) ---
         const paymentMap: any = {}
+        const methodTranslations: any = {
+            'CASH': 'DINHEIRO',
+            'CREDIT': 'CRÉDITO',
+            'DEBIT': 'DÉBITO',
+            'PIX': 'PIX'
+        }
+
         transactions.forEach(t => {
-            const method = t.method
-            if (!paymentMap[method]) paymentMap[method] = { name: method, value: 0, count: 0, color: getColor(method) }
+            const rawMethod = t.method
+            const method = methodTranslations[rawMethod] || rawMethod
+            if (!paymentMap[method]) paymentMap[method] = { name: method, value: 0, count: 0, color: getColor(rawMethod) }
             paymentMap[method].value += t.amount
             paymentMap[method].count += 1
         })
         const paymentMethods = Object.values(paymentMap)
 
-        // --- Vehicle Types (Needs Ticket Join really, but Transaction doesn't have it easily without join) ---
-        // Let's refetch rich data or just mock types if we can't join easily?
-        // We can do a second query: Tickets where id in transaction.ticketId
-        // Or cleaner: findMany Ticket where status=PAID or ID in (transIds)
-        // For efficiency, let's group by Ticket Type if available or just use "Carro" as default if we don't have it.
-        // Actually, Ticket has vehicleType? No, entryData had it. Ticket schema... let's check.
-        // Ticket has no explicit "vehicleType" column in the snippet I recall? 
-        // Wait, app/tickets/page.tsx uses entryData.vehicleType but where does it save?
-        // Looking at schema in my memory: Ticket has plate, entryTime... 
-        // I'll assume 'ROTATIVO' vs 'ACCREDITED' is valid.
-        // Let's fetch Tickets to get Types.
+        // --- Vehicle Types Separation ---
+        const vehicleMap: any = {}
+        const typeTranslations: any = {
+            'CAR': 'CARROS',
+            'MOTORCYCLE': 'MOTOS',
+            'MOTO': 'MOTOS',
+            'VAN': 'UTILITÁRIOS',
+            'TRUCK': 'CAMINHÕES'
+        }
 
-        const tickets = await prisma.ticket.findMany({
-            where: { tenantId: tid, status: { not: 'CANCELLED' } },
-            select: { id: true, status: true, amountPaid: true } // Minimal
+        transactions.forEach(t => {
+            const rawType = t.ticket?.vehicleType || 'CAR'
+            const type = typeTranslations[rawType] || 'CARROS'
+            if (!vehicleMap[type]) vehicleMap[type] = { 
+                name: type, 
+                value: 0, 
+                count: 0, 
+                color: rawType.includes('MOTO') ? '#8b5cf6' : '#3b82f6' 
+            }
+            vehicleMap[type].value += t.amount
+            vehicleMap[type].count += 1
         })
-        // NOTE: We verified Schema earlier. If vehicleType is missing in Schema, we can't chart it. 
-        // We added operatorId. We didn't add vehicleType explicitly to Ticket model in previous steps?
-        // Let's check schema.prisma if needed. For now I will assume "Carro" default or "Rotativo".
+        const vehicleTypes = Object.values(vehicleMap)
 
         // --- KPI Totals ---
         const totalRevenue = transactions.reduce((acc, t) => acc + t.amount, 0)
-        const totalVehicles = tickets.length
+        const totalVehicles = transactions.length // Using transactions for paid count
 
         // --- Weekly Flow (Last 7 days) ---
         const weeklyMap = new Map()
@@ -115,18 +130,7 @@ export async function GET(request: Request) {
             weeklyMap.set(key, { day: dayName, vehicles: 0, date: key })
         }
 
-        tickets.forEach(t => {
-            // we don't have createdAt on Ticket in my memory? We have entryTime.
-            // Assuming entryTime is Date.
-            // actually ticket probably has createdAt too or use entryTime.
-            // Let's use transaction createdAt for "Flow" of payments? Or Ticket Entry for Flow of cars?
-            // User likely wants Flow of Cars.
-            // We can use transaction times for "Paid Flow" or fetch Tickets entryTime.
-            // Let's assume fetching tickets included entryTime.
-            // Wait, I only selected id, status, amountPaid above. Let's fix that query if I can.
-        })
-
-        // RE-QUERY for full stats safely
+        // Re-fetch tickets for flow stats
         const allTickets = await prisma.ticket.findMany({
             where: { tenantId: tid },
             select: { entryTime: true }
@@ -144,9 +148,7 @@ export async function GET(request: Request) {
         return NextResponse.json({
             revenueByHour,
             paymentMethods: paymentMethods.length ? paymentMethods : [{ name: 'N/A', value: 0, count: 0, color: '#ccc' }],
-            vehicleTypes: [
-                { name: 'Geral', value: totalRevenue, count: totalVehicles, color: '#3b82f6' }
-            ], // Fallback until vehicleType is in Schema
+            vehicleTypes: vehicleTypes.length ? vehicleTypes : [{ name: 'Geral', value: 0, count: 0, color: '#3b82f6' }],
             weeklyFlow,
             kpi: {
                 totalRevenue,

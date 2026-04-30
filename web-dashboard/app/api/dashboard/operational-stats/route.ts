@@ -113,10 +113,13 @@ export async function GET(request: Request) {
             total: p._sum.amount || 0
         }))
 
-        // 6. Vehicle Types
-        const vehiclesByType = await prisma.vehicle.groupBy({
-            by: ['type'],
-            where: { tenantId: tenantIdsQuery },
+        // 6. Vehicle Types (Based on current inflow)
+        const vehiclesByType = await prisma.ticket.groupBy({
+            by: ['vehicleType'],
+            where: { 
+                tenantId: tenantIdsQuery,
+                entryTime: { gte: filterStart, lte: filterEnd }
+            },
             _count: { id: true }
         })
 

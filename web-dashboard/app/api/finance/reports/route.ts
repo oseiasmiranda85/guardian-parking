@@ -103,6 +103,7 @@ export async function GET(request: Request) {
             const typeMapping: any = {
                 'CAR': 'CARRO',
                 'MOTORCYCLE': 'MOTO',
+                'MOTO': 'MOTO',
                 'VAN': 'UTILITÁRIO',
                 'TRUCK': 'CAMINHÃO',
                 'Carro': 'CARRO',
