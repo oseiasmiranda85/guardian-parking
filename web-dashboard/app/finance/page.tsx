@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import { DollarSign, CreditCard, Banknote, User } from 'lucide-react'
+import { DollarSign, CreditCard, Banknote, User, AlertCircle } from 'lucide-react'
 import FilterBar from '../components/FilterBar'
 import Link from 'next/link'
 

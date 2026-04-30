@@ -228,7 +228,17 @@ export default function Dashboard() {
                                 tenantName: '',
                                 occupancy: { current: 0, total: 0, available: 0, percentage: 0 },
                                 financial: { revenueToday: 0, ticketAverage: 0, byPaymentMethod: [] },
-                                flow: { entriesToday: 0, byVehicleType: [], hourlyDistribution: [] }
+                                flow: { 
+                                    entriesToday: 0, 
+                                    byVehicleType: [], 
+                                    hourlyDistribution: [],
+                                    courtesyCount: 0,
+                                    accreditedCount: 0,
+                                    courtesyPercentage: 0,
+                                    courtesyThreshold: 5
+                                },
+                                exemptions: { courtesy: 0, accredited: 0, total: 0 },
+                                audit: { prepaidApproves: 0 }
                             });
                             setActiveFilters(f);
                         }} />
