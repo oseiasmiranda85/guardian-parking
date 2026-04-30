@@ -20,9 +20,8 @@ export async function POST(request: Request) {
         const now = new Date()
 
         // Upsert device: create on first login, update lastSeen on heartbeat
-        await prisma.device.upsert({
+        const device = await prisma.device.upsert({
             where: {
-                // Use posId + tid as unique key
                 id: (await prisma.device.findFirst({
                     where: { posId: deviceId, tenantId: tid }
                 }))?.id ?? 0
@@ -44,7 +43,12 @@ export async function POST(request: Request) {
             }
         })
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ 
+            success: true,
+            config: {
+                requireExitTicket: device.requireExitTicket
+            }
+        })
 
     } catch (error: any) {
         console.error('[SYNC_ERROR] Details:', error.message || error)

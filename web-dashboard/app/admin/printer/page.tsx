@@ -74,7 +74,7 @@ function MonitorContent() {
             {data.steps.map((step: any, i: number) => {
               if (step.type === 'IMAGE') {
                 const src = step.base64 === 'LOGO' 
-                  ? 'https://raw.githubusercontent.com/oseiasmiranda85/guardian-parking/main/web-dashboard/public/logo-guardian.png'
+                  ? '/logo-guardian.png'
                   : step.base64
                 return (
                   <div key={i} className="flex justify-center py-2">
@@ -113,7 +113,7 @@ function MonitorContent() {
         return (
           <div className="flex flex-col gap-1 text-[11px] font-mono leading-tight text-[#000000] [!important]">
             <div className="flex justify-center py-4">
-              <img src="https://raw.githubusercontent.com/oseiasmiranda85/guardian-parking/main/web-dashboard/public/logo-guardian.png" className="w-24 h-auto" alt="Logo" />
+              <img src="/logo-guardian.png" className="w-24 h-auto" alt="Logo" />
             </div>
             <div className="whitespace-pre font-mono leading-none">
               {data.rawContent}

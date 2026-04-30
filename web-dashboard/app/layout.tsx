@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
     title: 'Guardian Parking Dashboard',
     description: 'Gestão de estacionamento em tempo real',
+    icons: {
+        icon: '/logo-guardian.png',
+    }
 }
 
 export default function RootLayout({

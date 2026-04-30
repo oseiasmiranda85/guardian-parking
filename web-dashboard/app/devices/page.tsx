@@ -160,13 +160,39 @@ export default function DevicesPage() {
                             </div>
 
                             {/* Last seen */}
-                            <div className="flex items-center gap-2 text-xs text-gray-500 pt-4 border-t border-white/5">
-                                <Clock className="w-3.5 h-3.5 shrink-0" />
-                                <span>
-                                    Último acesso: {new Date(device.lastSeen).toLocaleTimeString('pt-BR', {
-                                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                                    })}
-                                </span>
+                            <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-white/5">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                                    <span>
+                                        Último: {new Date(device.lastSeen).toLocaleTimeString('pt-BR', {
+                                            hour: '2-digit', minute: '2-digit'
+                                        })}
+                                    </span>
+                                </div>
+                                
+                                {/* Toggle Control */}
+                                <div className="flex items-center gap-3 bg-black/40 px-3 py-1.5 rounded-full border border-white/5">
+                                    <span className="text-[9px] font-black uppercase text-gray-400">Ticket Saída</span>
+                                    <button
+                                        onClick={async () => {
+                                            const newVal = !device.requireExitTicket;
+                                            try {
+                                                await fetch(`/api/dashboard/devices/update`, {
+                                                    method: 'POST',
+                                                    body: JSON.stringify({ deviceId: device.deviceId, requireExitTicket: newVal })
+                                                });
+                                                fetchDevices(); // Refresh
+                                            } catch (e) { console.error(e) }
+                                        }}
+                                        className={`w-10 h-5 rounded-full relative transition-colors ${
+                                            device.requireExitTicket ? 'bg-emerald-600' : 'bg-stone-700'
+                                        }`}
+                                    >
+                                        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${
+                                            device.requireExitTicket ? 'right-1' : 'left-1'
+                                        }`} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}

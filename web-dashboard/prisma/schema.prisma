@@ -118,6 +118,7 @@ model Device {
   lastPing    DateTime?
   lastSeen    DateTime?
   opsToday    Int       @default(0)
+  requireExitTicket Boolean @default(true)
   tenant      Tenant    @relation(fields: [tenantId], references: [id])
 }
 
