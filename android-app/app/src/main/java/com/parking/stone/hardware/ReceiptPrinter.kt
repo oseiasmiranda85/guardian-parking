@@ -167,8 +167,9 @@ class ReceiptPrinter {
         val terminalId = com.parking.stone.data.DeviceManager.displayName
         
         val zReport = StringBuilder()
-        zReport.append("        GUARDIAN\n")
-        zReport.append("     PARKING SYSTEM\n\n")
+        zReport.append("--------------------------------\n")
+        zReport.append("================================\n")
+        zReport.append("        GUARDIAN PARKING\n")
         zReport.append("================================\n")
         zReport.append("       RELATORIO DE CAIXA\n")
         zReport.append("================================\n")
@@ -258,8 +259,9 @@ class ReceiptPrinter {
         val timestamp = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         
         val report = StringBuilder()
-        report.append("        GUARDIAN\n")
-        report.append("     PARKING SYSTEM\n\n")
+        report.append("--------------------------------\n")
+        report.append("================================\n")
+        report.append("        GUARDIAN PARKING\n")
         report.append("================================\n")
         report.append("      VEICULOS NO PATIO\n")
         report.append("================================\n")
