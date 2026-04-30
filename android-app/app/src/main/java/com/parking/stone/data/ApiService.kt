@@ -24,7 +24,20 @@ data class DeviceConfig(
 )
 data class SyncResponse(val success: Boolean, val message: String? = null, val count: Int? = null, val config: DeviceConfig? = null)
 data class StatusResponse(val status: String)
-data class PricingTable(val id: Int, val billingMode: String)
+data class PricingSlot(
+    val minMinutes: Int,
+    val maxMinutes: Int,
+    val price: Double,
+    val startTime: String? = null,
+    val endTime: String? = null
+)
+data class PricingTable(
+    val id: Int, 
+    val name: String,
+    val billingMode: String,
+    val type: String, // DURATION or FIXED_TIME
+    val slots: List<PricingSlot> = emptyList()
+)
 data class DeviceHeartbeat(val deviceId: String, val operatorName: String?, val operatorId: String?)
 
 data class TicketSync(
@@ -96,5 +109,10 @@ interface ApiService {
     @GET("api/tenant/status")
     suspend fun checkStatus(@Header("Authorization") token: String, @Query("tenantId") tenantId: Int): StatusResponse
     @GET("api/pricing")
-    suspend fun getActivePricing(@Header("Authorization") token: String, @Query("tenantId") tenantId: Int, @Query("active") active: Boolean): PricingTable?
+    suspend fun getActivePricing(
+        @Header("Authorization") token: String, 
+        @Query("tenantId") tenantId: Int, 
+        @Query("active") active: Boolean,
+        @Query("vehicleType") vehicleType: String? = null
+    ): PricingTable?
 }

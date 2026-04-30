@@ -207,13 +207,21 @@ class XSync(private val dao: ParkingDao) {
         val token = SessionManager.authToken ?: return
         
         try {
-            val pricing = NetworkModule.api.getActivePricing("Bearer $token", tenantId, true)
-            if (pricing != null) {
-                Log.d("XSync", "Config synced: billingMode=${pricing.billingMode}")
-                // Save to ConfigManager (Mock/Local)
-                ConfigManager.paymentTiming = if (pricing.billingMode == "PREPAID") 
+            // Sync CAR pricing
+            val carPricing = NetworkModule.api.getActivePricing("Bearer $token", tenantId, true, "CAR")
+            PricingManager.carPricing = carPricing
+            
+            // Sync MOTO pricing
+            val motoPricing = NetworkModule.api.getActivePricing("Bearer $token", tenantId, true, "MOTO")
+            PricingManager.motoPricing = motoPricing
+
+            // Update PaymentTiming based on CAR pricing (primary)
+            carPricing?.let {
+                ConfigManager.paymentTiming = if (it.billingMode == "PREPAID") 
                     ConfigManager.PaymentTiming.ENTRY else ConfigManager.PaymentTiming.EXIT
             }
+            
+            Log.d("XSync", "Config synced: CAR=${carPricing?.name}, MOTO=${motoPricing?.name}")
         } catch (e: Exception) {
             Log.e("XSync", "Config sync failed", e)
         }

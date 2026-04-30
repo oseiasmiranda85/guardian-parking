@@ -125,10 +125,10 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
 
                                     if (entry != null) {
                                         val now = System.currentTimeMillis()
-                                        val durationMillis = now - entry.entryTime
-                                        val hours = TimeUnit.MILLISECONDS.toHours(durationMillis)
-                                        val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
-                                        durationString = "${hours}h ${minutes}min"
+                                        val calculation = com.parking.stone.data.PricingManager.calculate(entry, now)
+                                        calculatedFee = calculation.first
+                                        isRefundVoucher = calculation.second
+                                        durationString = calculation.third
                                         
                                         // Conditional Auto-Release
                                         if (entry.isPaid && com.parking.stone.data.ConfigManager.autoRelease) {
@@ -148,16 +148,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                             return@launch
                                         }
 
-                                        // Otherwise, force conference mode for manual confirmation
-                                        foundEntry = entry
-                                        val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-                                        isRefundVoucher = totalMinutesLocal <= com.parking.stone.data.ConfigManager.toleranceMinutes
-                                        val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
-                                        
-                                        calculatedFee = if (entry.isPaid) 0.0
-                                                       else if (isRefundVoucher) 0.0 
-                                                       else if (entry.category == "CREDENCIADO") 0.0 
-                                                       else (if (entry.type == "Moto") 10.0 + (calculatedHours * 2.0) else 15.0 + (calculatedHours * 5.0))
+                                        // Fees and Refund logic are now calculated above via PricingManager.calculate
                                     }
                                 }
                             }
@@ -234,39 +225,11 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                         db.parkingDao().getActiveEntryByPlate(query, tenantId)
                                     }
 
-                                    if (entry != null) {
-                                        val now = System.currentTimeMillis()
-                                        val durationMillis = now - entry.entryTime
-                                        val hours = TimeUnit.MILLISECONDS.toHours(durationMillis)
-                                        val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
-                                        val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-                                        durationString = "${hours}h ${minutes}min"
-                                        
                                         foundEntry = entry
-                                        
-                                        // LOGIC: Dynamic Tolerance / Refund
-                                        isRefundVoucher = totalMinutesLocal <= com.parking.stone.data.ConfigManager.toleranceMinutes
-                                        
-                                        if (isRefundVoucher) {
-                                            if (entry.isPaid) {
-                                                // If already paid, it's a REFUND (Estorno)
-                                                calculatedFee = entry.amount
-                                            } else {
-                                                // If not paid, it's a FREE EXIT (Isento)
-                                                calculatedFee = 0.0
-                                            }
-                                        } else {
-                                            if (entry.isPaid) {
-                                                calculatedFee = 0.0 // No more to pay
-                                            } else {
-                                                if (entry.category == "CREDENCIADO" || entry.amount == 0.0) {
-                                                    calculatedFee = 0.0
-                                                } else {
-                                                    // Calculation logic based on vehicle type
-                                                    calculatedFee = if (entry.type == "Moto") 10.0 + (hours * 2.0) else 15.0 + (hours * 5.0)
-                                                }
-                                            }
-                                        }
+                                        val calculation = com.parking.stone.data.PricingManager.calculate(entry, now)
+                                        calculatedFee = if (entry.isPaid) 0.0 else calculation.first
+                                        isRefundVoucher = calculation.second
+                                        durationString = calculation.third
                                     } else {
                                         error = "Ticket não encontrado ou já saiu."
                                     }
@@ -327,20 +290,10 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                 scope.launch {
                                     val entry = db.parkingDao().getActiveEntryByPlate(item.plate, SessionManager.tenantId)
                                     if (entry != null) {
-                                        val now = System.currentTimeMillis()
-                                        val durationMillis = now - entry.entryTime
-                                        val hours = TimeUnit.MILLISECONDS.toHours(durationMillis)
-                                        val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
-                                        durationString = "${hours}h ${minutes}min"
-                                        isRefundVoucher = TimeUnit.MILLISECONDS.toMinutes(durationMillis) <= com.parking.stone.data.ConfigManager.toleranceMinutes
-                                        
-                                        // Calculation
-                                        val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
-                                        calculatedFee = if (entry.isPaid) 0.0
-                                                       else if (isRefundVoucher) 0.0 
-                                                       else if (entry.category == "CREDENCIADO") 0.0 
-                                                       else (if (entry.type == "Moto") 10.0 + (calculatedHours * 2.0) else 15.0 + (calculatedHours * 5.0))
-                                        
+                                        val calculation = com.parking.stone.data.PricingManager.calculate(entry)
+                                        calculatedFee = if (entry.isPaid) 0.0 else calculation.first
+                                        isRefundVoucher = calculation.second
+                                        durationString = calculation.third
                                         foundEntry = entry
                                     }
                                 }
