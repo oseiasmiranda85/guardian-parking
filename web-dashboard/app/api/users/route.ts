@@ -48,22 +48,68 @@ export async function POST(request: Request) {
 
         const tid = parseInt(tenantId)
 
-        // Check if username/email exists
-        const existing = await prisma.tenantUser.findFirst({
-            where: { username: email }
+        // 1. Get Current Tenant's Owner
+        const currentTenant = await prisma.tenant.findUnique({
+            where: { id: tid },
+            select: { ownerId: true }
         })
 
-        if (existing) {
-            return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
+        if (!currentTenant) {
+            return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
         }
 
+        // 2. Check if username/email exists ANYWHERE
+        const existingGlobal = await prisma.tenantUser.findFirst({
+            where: { username: email },
+            include: { tenant: true }
+        })
+
+        if (existingGlobal) {
+            // Check if it belongs to the same owner
+            if (existingGlobal.tenant.ownerId === currentTenant.ownerId) {
+                // USER BELONGS TO THE SAME OWNER - PERMIT LINKING
+                // Check if already in THIS specific tenant
+                const alreadyInTenant = await prisma.tenantUser.findFirst({
+                    where: { username: email, tenantId: tid }
+                })
+
+                if (alreadyInTenant) {
+                    return NextResponse.json({ error: 'Este usuário já está habilitado nesta unidade.' }, { status: 409 })
+                }
+
+                // Create the link (cloning password and basic info)
+                const linkedUser = await prisma.tenantUser.create({
+                    data: {
+                        name: existingGlobal.name,
+                        username: email,
+                        role: role,
+                        password: existingGlobal.password, // SHARED PASSWORD
+                        pin: pin || existingGlobal.pin,
+                        tenantId: tid
+                    }
+                })
+
+                return NextResponse.json({
+                    id: linkedUser.id,
+                    name: linkedUser.name,
+                    email: linkedUser.username,
+                    role: linkedUser.role,
+                    linked: true // Flag for UI
+                })
+            } else {
+                // Different owner - Forbidden
+                return NextResponse.json({ error: 'Este nome de usuário já está em uso por outro cliente do sistema.' }, { status: 409 })
+            }
+        }
+
+        // 3. Normal Creation (First time in the network)
         const newUser = await prisma.tenantUser.create({
             data: {
                 name,
                 username: email,
                 role,
                 password: bcrypt.hashSync(password || '123456', 10),
-                pin: pin || null,               // Numerical PIN for POS
+                pin: pin || null,
                 tenantId: tid
             }
         })

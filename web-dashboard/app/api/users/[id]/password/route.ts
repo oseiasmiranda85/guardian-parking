@@ -23,9 +23,25 @@ export async function PATCH(
         // Hash new password
         const hashedPassword = await hash(password, 10)
 
-        // Update User
-        await prisma.tenantUser.update({
+        // 1. Find the target user and their owner
+        const targetUser = await prisma.tenantUser.findUnique({
             where: { id },
+            include: { tenant: true }
+        })
+
+        if (!targetUser) {
+            return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+        }
+
+        // 2. Update ALL instances of this username for the SAME OWNER
+        // This ensures the password stays in sync across all establishments of the same owner
+        await prisma.tenantUser.updateMany({
+            where: {
+                username: targetUser.username,
+                tenant: {
+                    ownerId: targetUser.tenant.ownerId
+                }
+            },
             data: { password: hashedPassword }
         })
 
