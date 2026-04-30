@@ -129,43 +129,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <div className="flex h-screen overflow-hidden bg-black text-white print:bg-white print:text-black print:block print:h-auto print:overflow-visible">
-            <style jsx global>{`
-                @media print {
-                    @page {
-                        margin: 1.0cm;
-                        size: A4 portrait;
-                    }
-                    html, body {
-                        background: white !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        -webkit-print-color-adjust: exact;
-                    }
-                    /* Nuclear option: hide everything by default */
-                    body * {
-                        visibility: hidden !important;
-                    }
-                    /* Show only the print container and its children */
-                    .print-container, .print-container * {
-                        visibility: visible !important;
-                    }
-                    .print-container {
-                        position: absolute !important;
-                        left: 0 !important;
-                        top: 0 !important;
-                        width: 100% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: white !important;
-                        display: block !important;
-                    }
-                    /* Ensure no dark backgrounds leak */
-                    div, main, section, aside, nav {
-                        background: transparent !important;
-                        border-color: transparent !important;
-                    }
-                }
-            `}</style>
             {/* Sidebar */}
             <aside className="w-64 flex-none bg-stone-900 border-r border-white/10 flex flex-col z-20 print:hidden">
                 <div className="p-4 border-b border-white/10 shrink-0">
@@ -227,7 +190,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-h-0 relative print:block print:bg-white print:static">
-                <header className="h-14 shrink-0 border-b border-white/10 flex items-center justify-between px-6 bg-black/50 backdrop-blur z-10 print:hidden">
+                <header className="h-14 shrink-0 border-b border-white/10 flex items-center justify-between px-6 bg-black z-10 print:hidden">
                     <div className="text-sm breadcrumbs text-gray-400 flex items-center gap-2">
                         <span className="text-gray-600 font-bold">Guardian</span>
                         <span className="text-gray-700">/</span>

@@ -101,7 +101,7 @@ export default function PortalPage() {
         <div className="h-screen bg-black text-white flex flex-col overflow-hidden relative">
 
             {/* Header */}
-            <div className="flex justify-between items-center p-6 shrink-0 z-10 border-b border-white/5 bg-black/50 backdrop-blur-md">
+            <div className="flex justify-between items-center p-6 shrink-0 z-10 border-b border-white/5 bg-black">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center border border-stone-500/30">
                         <span className="font-bold text-stone-500">G</span>
@@ -158,7 +158,7 @@ export default function PortalPage() {
                         )}
 
                         {/* Tenants List Column */}
-                        <div className="flex flex-col h-full min-h-0 bg-stone-900/50 rounded-2xl border border-white/5 p-6 backdrop-blur-sm max-h-[600px]">
+                        <div className="flex flex-col h-full min-h-0 bg-stone-900 border border-white/5 p-6 max-h-[600px]">
                             <div className="shrink-0 mb-4">
                                 <h3 className="text-gray-500 uppercase text-xs font-bold tracking-wider mb-2">Meus Estacionamentos</h3>
                                 <div className="relative">
