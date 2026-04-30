@@ -16,7 +16,8 @@ export async function GET(request: Request) {
                 id: true,
                 globalAutoRelease: true,
                 globalRequireExitTicket: true,
-                defaultTicketLayout: true
+                defaultTicketLayout: true,
+                courtesyThreshold: true
             }
         })
 
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
             globalAutoRelease, 
             globalRequireExitTicket, 
             defaultTicketLayout,
+            courtesyThreshold,
             applyToAll 
         } = body
 
@@ -51,7 +53,8 @@ export async function POST(request: Request) {
             data: {
                 globalAutoRelease,
                 globalRequireExitTicket,
-                defaultTicketLayout
+                defaultTicketLayout,
+                courtesyThreshold: courtesyThreshold ? parseFloat(courtesyThreshold.toString()) : undefined
             }
         })
 

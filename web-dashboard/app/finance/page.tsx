@@ -57,9 +57,11 @@ export default function FinancePage() {
     })
 
     // Calculate Totals based on filtered data
-    const totalRevenue = filteredData.reduce((acc, curr) => acc + curr.total, 0)
-    const totalCard = filteredData.reduce((acc, curr) => acc + curr.card, 0)
-    const totalCash = filteredData.reduce((acc, curr) => acc + curr.cash, 0)
+    const totalRevenue = filteredData.reduce((acc, curr) => acc + (curr.total || 0), 0)
+    const totalCard = filteredData.reduce((acc, curr) => acc + (curr.card || 0), 0)
+    const totalCash = filteredData.reduce((acc, curr) => acc + (curr.cash || 0), 0)
+    const totalRenounced = filteredData.reduce((acc, curr) => acc + (curr.renounced || 0), 0)
+    const totalExemptions = filteredData.reduce((acc, curr) => acc + (curr.courtesy || 0) + (curr.accredited || 0), 0)
 
     return (
         <div className="space-y-6">
@@ -70,10 +72,10 @@ export default function FinancePage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <ReportCard title="Faturamento Total" value={totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} sub="Filtrado" icon={DollarSign} color="text-green-500" />
+                <ReportCard title="Faturamento Total" value={totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} sub="Confirmado" icon={DollarSign} color="text-green-500" />
                 <ReportCard title="Em Cartões" value={totalCard.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} sub="Crédito + Débito" icon={CreditCard} color="text-blue-500" />
-                <ReportCard title="Em Espécie/Pix" value={totalCash.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} sub="Dinheiro" icon={Banknote} color="text-yellow-500" />
-                <ReportCard title="Operadores" value={filteredData.length} sub="Ativos no período" icon={User} color="text-purple-500" />
+                <ReportCard title="Receita Renunciada" value={totalRenounced.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} sub={`${totalExemptions} Isenções`} icon={AlertCircle} color="text-purple-500" />
+                <ReportCard title="Operadores" value={filteredData.length} sub="Ativos no período" icon={User} color="text-stone-500" />
             </div>
 
             {/* Detailed Table */}
@@ -86,11 +88,11 @@ export default function FinancePage() {
                     <thead className="bg-white/5 text-gray-400">
                         <tr>
                             <th className="p-4">Operador</th>
-                            <th className="p-4">Foco Veíc.</th>
-                            <th className="p-4 text-right">Qtd. Tickets</th>
-                            <th className="p-4 text-right">Cartão</th>
-                            <th className="p-4 text-right">Dinheiro</th>
-                            <th className="p-4 text-right">Total</th>
+                            <th className="p-4 text-right">Faturado</th>
+                            <th className="p-4 text-right text-purple-400">Cortesia</th>
+                            <th className="p-4 text-right text-blue-400">Credenc.</th>
+                            <th className="p-4 text-right text-purple-400 font-bold">Renunciado</th>
+                            <th className="p-4 text-right">Total Real</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
@@ -98,12 +100,15 @@ export default function FinancePage() {
                             <tr><td colSpan={6} className="p-4 text-center text-gray-500">Nenhum dado encontrado para os filtros.</td></tr>
                         ) : filteredData.map((row) => (
                             <tr key={row.id || Math.random()} className="hover:bg-white/5">
-                                <td className="p-4">{row.operator}</td>
-                                <td className="p-4 text-gray-400">{row.vehicle}</td>
-                                <td className="p-4 text-right">{row.tickets}</td>
-                                <td className="p-4 text-right text-gray-400">R$ {row.card?.toFixed(2)}</td>
-                                <td className="p-4 text-right text-gray-400">R$ {row.cash?.toFixed(2)}</td>
-                                <td className="p-4 text-right font-bold">R$ {row.total?.toFixed(2)}</td>
+                                <td className="p-4">
+                                    <div className="font-bold">{row.operator}</div>
+                                    <div className="text-[10px] text-gray-500 uppercase">{row.vehicle}</div>
+                                </td>
+                                <td className="p-4 text-right font-mono text-emerald-500">R$ {row.total?.toFixed(2)}</td>
+                                <td className="p-4 text-right font-mono text-purple-400">{row.courtesy || 0}</td>
+                                <td className="p-4 text-right font-mono text-blue-400">{row.accredited || 0}</td>
+                                <td className="p-4 text-right font-mono text-purple-300">R$ {row.renounced?.toFixed(2)}</td>
+                                <td className="p-4 text-right font-mono font-bold text-white">R$ {((row.total || 0) + (row.renounced || 0)).toFixed(2)}</td>
                             </tr>
                         ))}
                     </tbody>

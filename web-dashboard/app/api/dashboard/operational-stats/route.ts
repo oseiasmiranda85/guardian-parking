@@ -19,18 +19,22 @@ export async function GET(request: Request) {
         let capacity = 0
         let tenantName = 'Visão Consolidada (Geral)'
 
+        let courtesyThreshold = 5.0
+
         if (tenantId.startsWith('ALL_')) {
             const ownerId = parseInt(tenantId.split('_')[1])
-            const tenants = await prisma.tenant.findMany({ where: { ownerId }, select: { id: true, totalSpots: true } })
+            const tenants = await prisma.tenant.findMany({ where: { ownerId }, select: { id: true, totalSpots: true, courtesyThreshold: true } })
             const tIds = tenants.map(t => t.id)
             tenantIdsQuery = { in: tIds }
             capacity = tenants.reduce((acc, t) => acc + (t.totalSpots || 0), 0)
+            courtesyThreshold = tenants[0]?.courtesyThreshold || 5.0
         } else {
             const tid = parseInt(tenantId)
             tenantIdsQuery = tid
-            const tenant = await prisma.tenant.findUnique({ where: { id: tid }, select: { name: true, totalSpots: true } })
+            const tenant = await prisma.tenant.findUnique({ where: { id: tid }, select: { name: true, totalSpots: true, courtesyThreshold: true } })
             capacity = tenant?.totalSpots || 0
             tenantName = tenant?.name || 'Estacionamento'
+            courtesyThreshold = tenant?.courtesyThreshold || 5.0
         }
 
         // --- BRAZIL UTC-3 OFFSET LOGIC ---
@@ -116,7 +120,42 @@ export async function GET(request: Request) {
             _count: { id: true }
         })
 
-        // 7. Hourly Heatmap (Grouped by hour)
+        // 7. Courtesy and Accredited Metrics (Renounced Revenue)
+        const ticketsDetails = await prisma.ticket.findMany({
+            where: {
+                tenantId: tenantIdsQuery,
+                entryTime: { gte: filterStart, lte: filterEnd }
+            },
+            select: { ticketType: true, amountPaid: true, pricingTableId: true }
+        })
+
+        const courtesyTickets = ticketsDetails.filter(t => t.ticketType === 'CORTESIA')
+        const accreditedTickets = ticketsDetails.filter(t => t.ticketType === 'ACCREDITED' || t.ticketType === 'CREDENCIADO')
+        
+        // Fetch representative price for renounced revenue calculation
+        // We'll take the first hour price from the main active pricing table
+        const activePricing = await prisma.pricingTable.findFirst({
+            where: { tenantId: tenantIdsQuery, isActive: true },
+            include: { slots: { orderBy: { minMinutes: 'asc' }, take: 1 } }
+        })
+        const basePrice = activePricing?.slots[0]?.price || 10.0 // Fallback to 10 if no pricing found
+
+        const renouncedRevenueCourtesy = courtesyTickets.length * basePrice
+        const renouncedRevenueAccredited = accreditedTickets.length * basePrice
+        const totalRenouncedRevenue = renouncedRevenueCourtesy + renouncedRevenueAccredited
+
+        // 8. Prepaid Approves (for Audit panel)
+        const prepaidTransactions = await prisma.transaction.aggregate({
+            _sum: { amount: true },
+            where: {
+                tenantId: tenantIdsQuery,
+                createdAt: { gte: filterStart, lte: filterEnd },
+                method: { not: 'CORTESIA' } // Exclude courtesy even if zero
+            }
+        })
+        const prepaidApproves = prepaidTransactions._sum.amount || 0
+
+        // 9. Hourly Heatmap (Grouped by hour)
         const ticketsInRange = await prisma.ticket.findMany({
             where: {
                 tenantId: tenantIdsQuery,
@@ -147,7 +186,19 @@ export async function GET(request: Request) {
             flow: {
                 entriesToday: entriesRange,
                 byVehicleType: vehiclesByType,
-                hourlyDistribution
+                hourlyDistribution,
+                courtesyCount: courtesyTickets.length,
+                accreditedCount: accreditedTickets.length,
+                courtesyPercentage: entriesRange > 0 ? (courtesyTickets.length / entriesRange) * 100 : 0,
+                courtesyThreshold
+            },
+            audit: {
+                prepaidApproves
+            },
+            exemptions: {
+                courtesy: renouncedRevenueCourtesy,
+                accredited: renouncedRevenueAccredited,
+                total: totalRenouncedRevenue
             }
         })
     } catch (error: any) {

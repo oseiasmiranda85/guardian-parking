@@ -27,6 +27,25 @@ export async function GET(request: Request) {
             where: { tenantId: tid, status: 'OPEN' }
         })
 
+        // 2.5 Fetch Exemptions (Courtesy/Accredited)
+        const exemptionTickets = await prisma.ticket.findMany({
+            where: {
+                tenantId: tid,
+                ticketType: { in: ['CORTESIA', 'ACCREDITED', 'CREDENCIADO'] }
+            }
+        })
+
+        // Fetch active pricing for base price calculation
+        const activePricing = await prisma.pricingTable.findFirst({
+            where: { tenantId: tid, isActive: true },
+            include: { slots: { orderBy: { minMinutes: 'asc' }, take: 1 } }
+        })
+        const basePrice = activePricing?.slots[0]?.price || 10.0
+
+        const courtesyCount = exemptionTickets.filter(t => t.ticketType === 'CORTESIA').length
+        const accreditedCount = exemptionTickets.filter(t => t.ticketType !== 'CORTESIA').length
+        const renouncedRevenue = (courtesyCount + accreditedCount) * basePrice
+
         // 3. Process Data for Charts
 
         // --- Revenue by Hour (Today) ---
@@ -133,7 +152,10 @@ export async function GET(request: Request) {
                 totalRevenue,
                 totalVehicles,
                 ticketAvg: totalVehicles ? totalRevenue / totalVehicles : 0,
-                occupancy: activeCount // Just count for now
+                occupancy: activeCount,
+                renouncedRevenue,
+                courtesyCount,
+                accreditedCount
             }
         })
 

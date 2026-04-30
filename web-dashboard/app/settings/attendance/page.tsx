@@ -22,7 +22,8 @@ export default function AttendanceSettings() {
     const [settings, setSettings] = useState({
         globalAutoRelease: false,
         globalRequireExitTicket: true,
-        defaultTicketLayout: 'FULL'
+        defaultTicketLayout: 'FULL',
+        courtesyThreshold: 5.0
     })
 
     useEffect(() => {
@@ -40,7 +41,8 @@ export default function AttendanceSettings() {
                 setSettings({
                     globalAutoRelease: data.globalAutoRelease,
                     globalRequireExitTicket: data.globalRequireExitTicket,
-                    defaultTicketLayout: data.defaultTicketLayout || 'FULL'
+                    defaultTicketLayout: data.defaultTicketLayout || 'FULL',
+                    courtesyThreshold: data.courtesyThreshold || 5.0
                 })
             }
         } catch (error) {
@@ -177,6 +179,37 @@ export default function AttendanceSettings() {
                                 <p className="text-xs text-gray-500">Logos reduzidos, fontes menores e sem espaços em branco desnecessários.</p>
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                {/* 4. Limite de Cortesia */}
+                <div className="bg-stone-900 border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all">
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-red-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold">Limite de Alerta de Cortesia (%)</h3>
+                                <p className="text-sm text-gray-400">Define o percentual máximo aceitável de cortesias emitidas em relação ao total de entradas.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                            <input 
+                                type="range" 
+                                min="1" 
+                                max="50" 
+                                step="0.5"
+                                value={settings.courtesyThreshold}
+                                onChange={(e) => setSettings({...settings, courtesyThreshold: parseFloat(e.target.value)})}
+                                className="flex-1 h-2 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-red-500"
+                            />
+                            <div className="w-20 px-3 py-2 bg-black border border-white/10 rounded-lg text-center font-bold text-red-500">
+                                {settings.courtesyThreshold}%
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 italic">O sistema emitirá um alerta visual no Dashboard caso este limite seja ultrapassado no dia.</p>
                     </div>
                 </div>
             </div>

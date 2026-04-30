@@ -26,9 +26,28 @@ export async function GET(request: Request) {
         const transactions = await prisma.transaction.findMany({
             where: whereClause,
             include: {
-                operator: true // Fetch Operator (TenantUser)
+                operator: true
             }
         })
+
+        // Fetch Courtesy and Accredited tickets to calculate renounced revenue
+        const exemptionTickets = await prisma.ticket.findMany({
+            where: {
+                ...whereClause,
+                ticketType: { in: ['CORTESIA', 'ACCREDITED', 'CREDENCIADO'] }
+            },
+            include: {
+                entryOperator: true,
+                exitOperator: true
+            }
+        })
+
+        // Fetch active pricing for base price calculation
+        const activePricing = await prisma.pricingTable.findFirst({
+            where: { ...whereClause, isActive: true },
+            include: { slots: { orderBy: { minMinutes: 'asc' }, take: 1 } }
+        })
+        const basePrice = activePricing?.slots[0]?.price || 10.0
 
         // Group by Operator
         const grouping: any = {}
@@ -55,6 +74,37 @@ export async function GET(request: Request) {
             if (t.method === 'CASH') grouping[opName].cash += t.amount
             else if (t.method === 'CREDIT' || t.method === 'DEBIT') grouping[opName].card += t.amount
             else if (t.method === 'PIX') grouping[opName].pix += t.amount
+            else if (t.method === 'CORTESIA') grouping[opName].courtesy += 1
+        })
+
+        // Process Exemptions
+        exemptionTickets.forEach(ticket => {
+            // Priority to exit operator for exemption "approval"
+            const opName = ticket.exitOperator?.name || ticket.entryOperator?.name || 'Sistema / Totens'
+            
+            if (!grouping[opName]) {
+                grouping[opName] = {
+                    id: ticket.exitOperatorId || ticket.entryOperatorId || 'sys',
+                    operator: opName,
+                    tickets: 0,
+                    card: 0,
+                    cash: 0,
+                    total: 0,
+                    pix: 0,
+                    courtesy: 0,
+                    accredited: 0,
+                    renounced: 0,
+                    vehicle: 'Geral'
+                }
+            }
+
+            if (ticket.ticketType === 'CORTESIA') {
+                grouping[opName].courtesy += 1
+                grouping[opName].renounced += basePrice
+            } else {
+                grouping[opName].accredited += 1
+                grouping[opName].renounced += basePrice
+            }
         })
 
         const summary = Object.values(grouping)

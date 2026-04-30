@@ -13,7 +13,17 @@ export default function Dashboard() {
         tenantName: '',
         occupancy: { current: 0, total: 0, available: 0, percentage: 0 },
         financial: { revenueToday: 0, ticketAverage: 0, byPaymentMethod: [] },
-        flow: { entriesToday: 0, byVehicleType: [], hourlyDistribution: [] }
+        flow: { 
+            entriesToday: 0, 
+            byVehicleType: [], 
+            hourlyDistribution: [],
+            courtesyCount: 0,
+            accreditedCount: 0,
+            courtesyPercentage: 0,
+            courtesyThreshold: 5
+        },
+        exemptions: { courtesy: 0, accredited: 0, total: 0 },
+        audit: { prepaidApproves: 0 }
     })
     const [divergence, setDivergence] = useState<any>(null)
 
@@ -235,28 +245,33 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {/* DIVERGENCE PANEL (CONDITIONAL/ALWAYS VISIBLE) */}
-            {divergence && typeof divergence.divergence !== 'undefined' && (
+            {divergence && (
                 <div className={`border p-6 rounded-xl flex items-center justify-between ${
-                    divergence.divergence.alertLevel === 'HIGH' ? 'bg-red-500/10 border-red-500' :
-                    divergence.divergence.alertLevel === 'MEDIUM' ? 'bg-yellow-500/10 border-yellow-500' :
+                    (divergence.divergence?.alertLevel === 'HIGH' || opStats.flow.courtesyPercentage > opStats.flow.courtesyThreshold) ? 'bg-red-500/10 border-red-500' :
+                    (divergence.divergence?.alertLevel === 'MEDIUM' || opStats.flow.courtesyPercentage > (opStats.flow.courtesyThreshold * 0.7)) ? 'bg-yellow-500/10 border-yellow-500' :
                     'bg-green-500/10 border-green-500/20'
                 }`}>
                     <div>
                         <h3 className={`text-xl font-bold mb-2 ${
-                            divergence.divergence.alertLevel === 'HIGH' ? 'text-red-500' :
-                            divergence.divergence.alertLevel === 'MEDIUM' ? 'text-yellow-500' :
+                            (divergence.divergence?.alertLevel === 'HIGH' || opStats.flow.courtesyPercentage > opStats.flow.courtesyThreshold) ? 'text-red-500' :
+                            (divergence.divergence?.alertLevel === 'MEDIUM' || opStats.flow.courtesyPercentage > (opStats.flow.courtesyThreshold * 0.7)) ? 'text-yellow-500' :
                             'text-green-500'
                         }`}>
-                            Auditoria Operacional Pátio vs Caixa {divergence.divergence.alertLevel === 'HIGH' ? '(DIVERGÊNCIA ALTA)' : divergence.divergence.alertLevel === 'MEDIUM' ? '(ATENÇÃO)' : '(SAUDÁVEL)'}
+                            Auditoria Operacional {opStats.flow.courtesyPercentage > opStats.flow.courtesyThreshold ? '(ALERTA: CORTESIAS ELEVADAS)' : (divergence.divergence?.alertLevel === 'HIGH' ? '(DIVERGÊNCIA ALTA)' : '(SAUDÁVEL)')}
                         </h3>
-                        <div className="flex gap-8 text-sm text-gray-300">
-                            <div>Total de Entradas Físicas: <strong className="text-white">{divergence.divergence.totalTickets}</strong></div>
-                            <div>Pagamentos Aprovados (Pré): <strong className="text-emerald-400">{divergence.divergence.prepaidApproves}</strong></div>
-                            <div>Vouchers Estorno / Cancelamentos: <strong className={divergence.divergence.refundVouchers > 0 ? "text-yellow-400" : "text-white"}>{divergence.divergence.refundVouchers}</strong></div>
-                            <div>Sessões de Caixa Abertas: <strong className="text-blue-400">{divergence.activeSessions?.length || 0}</strong></div>
+                        <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm text-gray-300">
+                            <div>Total de Entradas: <strong className="text-white">{opStats.flow.entriesToday}</strong></div>
+                            <div>Pagamentos Aprovados (Pré): <strong className="text-emerald-400">{opStats.audit?.prepaidApproves?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'R$ 0,00'}</strong></div>
+                            <div>Cortesias: <strong className={opStats.flow.courtesyPercentage > opStats.flow.courtesyThreshold ? "text-red-400" : "text-white"}>{opStats.flow.courtesyCount} ({opStats.flow.courtesyPercentage.toFixed(1)}%)</strong></div>
+                            <div>Credenciados: <strong className="text-white">{opStats.flow.accreditedCount}</strong></div>
+                            <div>Divergência Pátio/Caixa: <strong className={divergence.divergence?.alertLevel === 'HIGH' ? "text-red-400" : "text-white"}>{divergence.divergence?.refundVouchers || 0} vouchers</strong></div>
                         </div>
                     </div>
+                    {opStats.flow.courtesyPercentage > opStats.flow.courtesyThreshold && (
+                        <div className="bg-red-500 text-white px-4 py-2 rounded-lg font-black text-xs animate-pulse">
+                            LIMITE DE {opStats.flow.courtesyThreshold}% EXCEDIDO
+                        </div>
+                    )}
                 </div>
             )}
             {/* CONNECTED DEVICES PANEL */}
@@ -357,13 +372,19 @@ export default function Dashboard() {
                     <p className="text-xs text-stone-500 mt-4">Veículos no período</p>
                 </div>
 
-                {/* 4. AVERAGE TICKET */}
+                {/* 4. RENOUNCED REVENUE (Isenções) */}
                 <div className="bg-stone-900 border border-white/10 rounded-xl p-6 relative overflow-hidden group hover:border-white/20 transition-all">
-                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Ticket Médio</p>
-                    <h3 className="text-3xl font-bold text-blue-400 mt-2">
-                        {opStats.financial.ticketAverage.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <AlertCircle className="w-24 h-24 text-purple-500" />
+                    </div>
+                    <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Receita Renunciada</p>
+                    <h3 className="text-3xl font-bold text-purple-400 mt-2">
+                        {opStats.exemptions.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </h3>
-                    <p className="text-xs text-stone-500 mt-4">Média por veículo</p>
+                    <div className="text-[9px] text-stone-500 mt-4 flex flex-col gap-1">
+                        <div className="flex justify-between"><span>Cortesias:</span> <span className="font-bold text-gray-300">{opStats.exemptions.courtesy.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                        <div className="flex justify-between"><span>Credenciados:</span> <span className="font-bold text-gray-300">{opStats.exemptions.accredited.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span></div>
+                    </div>
                 </div>
 
             </div>

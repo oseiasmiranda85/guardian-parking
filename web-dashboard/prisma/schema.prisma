@@ -63,6 +63,7 @@ model Tenant {
   globalAutoRelease    Boolean               @default(false)
   globalRequireExitTicket Boolean            @default(true)
   defaultTicketLayout  String                @default("FULL")
+  courtesyThreshold    Float                 @default(5.0)
 }
 
 model Subscription {

@@ -125,8 +125,11 @@ export default function ReportsPage() {
                     <p className="text-2xl font-bold text-white print:text-black">{totalVehicles}</p>
                 </div>
                 <div className="bg-stone-900 border border-white/10 p-6 rounded-xl print:border-black print:bg-white">
-                    <h3 className="text-gray-400 text-sm mb-1 print:text-black">Taxa de Ocupação</h3>
-                    <p className="text-2xl font-bold text-blue-500 print:text-black">{kpi.occupancy}</p>
+                    <h3 className="text-gray-400 text-sm mb-1 print:text-black">Receita Renunciada</h3>
+                    <p className="text-2xl font-bold text-purple-500 print:text-black">
+                        {(kpi.renouncedRevenue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase font-bold">{kpi.courtesyCount || 0} Cortesias / {kpi.accreditedCount || 0} Cred.</p>
                 </div>
             </div>
 
