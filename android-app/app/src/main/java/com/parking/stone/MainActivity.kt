@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         com.parking.stone.data.SessionManager.init(this)
         com.parking.stone.data.DeviceManager.init(this)
+        com.parking.stone.data.ConfigManager.init(this)
         setContent {
             StoneParkingTheme {
                 Surface(
@@ -68,6 +69,9 @@ fun ParkingAppNavHost() {
         }
         composable(com.parking.stone.ui.Routes.REPRINT_TICKET) {
             com.parking.stone.ui.screens.ReprintTicketScreen(navController)
+        }
+        composable(com.parking.stone.ui.Routes.SETTINGS) {
+            com.parking.stone.ui.screens.SettingsScreen(navController)
         }
     }
 }

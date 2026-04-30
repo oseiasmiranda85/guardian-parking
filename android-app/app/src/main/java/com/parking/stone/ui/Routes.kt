@@ -10,4 +10,5 @@ object Routes {
     const val CASH_CLOSING = "cash_closing"
     const val CANCEL_TICKET = "cancel_ticket"
     const val REPRINT_TICKET = "reprint_ticket"
+    const val SETTINGS = "settings"
 }

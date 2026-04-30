@@ -179,13 +179,12 @@ class ReceiptPrinter {
         val timestamp = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         val terminalId = com.parking.stone.data.DeviceManager.displayName
         
+        val steps = mutableListOf<String>()
+        steps.add("""{"type":"IMAGE","base64":"LOGO","fullWidth":false}""")
+        steps.add("""{"type":"TEXT","text":"================================\nRELATORIO DE CAIXA\n================================","align":"CENTER","isBold":true}""")
+        steps.add("""{"type":"SPACE"}""")
+
         val zReport = StringBuilder()
-        zReport.append("--------------------------------\n")
-        zReport.append("================================\n")
-        zReport.append("        GUARDIAN PARKING\n")
-        zReport.append("================================\n")
-        zReport.append("       RELATORIO DE CAIXA\n")
-        zReport.append("================================\n")
         zReport.append(String.format("DATA: %s\n", timestamp))
         zReport.append(String.format("TERM: %s\n", terminalId))
         zReport.append(String.format("ID:   %s\n", sessionId.take(8)))
@@ -251,6 +250,7 @@ class ReceiptPrinter {
 
         val json = """
             {
+                "steps": [${steps.joinToString(",")}, {"type":"TEXT", "text": ${escapeJson(rawContent)}, "align": "LEFT", "isBold": true}],
                 "style": "REPORT",
                 "rawContent": ${escapeJson(rawContent)},
                 "operator": "$operator",
@@ -271,13 +271,12 @@ class ReceiptPrinter {
     fun printInventoryReport(vehicles: List<com.parking.stone.data.model.ParkingEntry>): Boolean {
         val timestamp = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         
+        val steps = mutableListOf<String>()
+        steps.add("""{"type":"IMAGE","base64":"LOGO","fullWidth":false}""")
+        steps.add("""{"type":"TEXT","text":"================================\nVEICULOS NO PATIO\n================================","align":"CENTER","isBold":true}""")
+        steps.add("""{"type":"SPACE"}""")
+
         val report = StringBuilder()
-        report.append("--------------------------------\n")
-        report.append("================================\n")
-        report.append("        GUARDIAN PARKING\n")
-        report.append("================================\n")
-        report.append("      VEICULOS NO PATIO\n")
-        report.append("================================\n")
         report.append(String.format("DATA: %s\n", timestamp))
         report.append(String.format("TERM: %s\n", com.parking.stone.data.DeviceManager.displayName))
         report.append("--------------------------------\n")
@@ -301,6 +300,7 @@ class ReceiptPrinter {
 
         val json = """
             {
+                "steps": [${steps.joinToString(",")}, {"type":"TEXT", "text": ${escapeJson(rawContent)}, "align": "LEFT", "isBold": true}],
                 "style": "REPORT",
                 "rawContent": ${escapeJson(rawContent)},
                 "tenantId": ${com.parking.stone.data.SessionManager.tenantId},

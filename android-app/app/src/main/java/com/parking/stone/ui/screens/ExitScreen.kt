@@ -129,8 +129,8 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                         val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMillis) % 60
                                         durationString = "${hours}h ${minutes}min"
                                         
-                                        // AUTO RELEASE LOGIC: If PAID, exit immediately
-                                        if (entry.isPaid) {
+                                        // Conditional Auto-Release
+                                        if (entry.isPaid && com.parking.stone.data.ConfigManager.autoRelease) {
                                             val updated = entry.copy(
                                                 exitTime = System.currentTimeMillis(),
                                                 isSynced = false,
@@ -138,22 +138,25 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                             )
                                             db.parkingDao().updateEntry(updated)
                                             if (com.parking.stone.data.ConfigManager.requireExitTicket) {
-                                                ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
+                                                com.parking.stone.hardware.ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
                                             }
                                             
-                                            withContext(Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
-                                            recentEntries = db.parkingDao().getActiveEntries(SessionManager.tenantId)
-                                            android.widget.Toast.makeText(context, "SAÍDA LIBERADA: ${entry.plate}", android.widget.Toast.LENGTH_LONG).show()
-                                        } else {
-                                            // Show for payment
-                                            foundEntry = entry
-                                            val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
-                                            isRefundVoucher = totalMinutesLocal <= 15
-                                            val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
-                                            calculatedFee = if (isRefundVoucher) 0.0 
-                                                           else if (entry.category == "CREDENCIADO") 0.0 
-                                                           else (if (entry.type == "Moto") 10.0 + (calculatedHours * 2.0) else 15.0 + (calculatedHours * 5.0))
+                                            withContext(kotlinx.coroutines.Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
+                                            recentEntries = db.parkingDao().getActiveEntries(com.parking.stone.data.SessionManager.tenantId)
+                                            android.widget.Toast.makeText(context, "SAÍDA AUTOMÁTICA: ${entry.plate}", android.widget.Toast.LENGTH_LONG).show()
+                                            return@launch
                                         }
+
+                                        // Otherwise, force conference mode for manual confirmation
+                                        foundEntry = entry
+                                        val totalMinutesLocal = TimeUnit.MILLISECONDS.toMinutes(durationMillis)
+                                        isRefundVoucher = totalMinutesLocal <= 15
+                                        val calculatedHours = Math.ceil(durationMillis.toDouble() / (1000 * 60 * 60)).toInt()
+                                        
+                                        calculatedFee = if (entry.isPaid) 0.0
+                                                       else if (isRefundVoucher) 0.0 
+                                                       else if (entry.category == "CREDENCIADO") 0.0 
+                                                       else (if (entry.type == "Moto") 10.0 + (calculatedHours * 2.0) else 15.0 + (calculatedHours * 5.0))
                                     }
                                 }
                             }

@@ -51,6 +51,7 @@ export async function GET(request: Request) {
                 online: d.lastSeen ? d.lastSeen >= onlineThreshold : false,
                 lastSeen: d.lastSeen?.toISOString() ?? d.lastPing?.toISOString() ?? new Date(0).toISOString(),
                 status: d.status,
+                requireExitTicket: d.requireExitTicket,
                 entryCount: entryCount,
                 exitCount: exitCount,
                 totalOps: entryCount + exitCount

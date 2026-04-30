@@ -225,6 +225,19 @@ fun DashboardScreen(navController: NavController) {
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
+
+                NavigationDrawerItem(
+                    label = { Text("Configurações de Atendimento") },
+                    selected = false,
+                    onClick = { 
+                        scope.launch { 
+                            drawerState.close() 
+                            navController.navigate(Routes.SETTINGS)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Settings, null, tint = MaterialTheme.colorScheme.primary) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
                 
                 NavigationDrawerItem(
                     label = { Text("Sair / Logout") },
