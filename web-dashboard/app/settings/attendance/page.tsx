@@ -207,6 +207,32 @@ export default function AttendanceSettings() {
                     * Ao <strong>Forçar em Todos</strong>, todos os terminais ativos terão suas configurações individuais sobrescritas imediatamente.
                 </p>
             </div>
+
+            {/* Central de Atualização do App */}
+            <div className="bg-gradient-to-br from-stone-900 to-black border border-stone-500/20 rounded-2xl p-8 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-all">
+                    <RefreshCcw className="w-32 h-32 text-stone-500" />
+                </div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="space-y-2 text-center md:text-left">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-bold tracking-widest uppercase mb-2">
+                            Versão 1.9.0 Disponível
+                        </div>
+                        <h2 className="text-2xl font-bold">Central de Atualização (APK)</h2>
+                        <p className="text-gray-400 max-w-md">Instale a versão mais recente nos terminais POS para ativar o OCR de alta performance e as novas lógicas de saída.</p>
+                    </div>
+
+                    <a 
+                        href="/downloads/guardian-v1.9.0.apk" 
+                        download
+                        className="flex items-center gap-3 px-8 py-4 bg-stone-100 text-black font-black rounded-xl hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-xl"
+                    >
+                        <RefreshCcw className="w-6 h-6" />
+                        BAIXAR APK ATUALIZADO
+                    </a>
+                </div>
+            </div>
         </div>
     )
 }
