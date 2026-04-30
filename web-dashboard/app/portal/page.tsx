@@ -19,15 +19,15 @@ export default function PortalPage() {
             router.push('/')
             return
         }
-        const currentUser = JSON.parse(session)
-        setUser(currentUser)
+        const sessionData = JSON.parse(session)
+        setUser(sessionData)
 
         // Fetch Data
         async function loadTenants() {
             try {
                 let url = '/api/admin/tenants'
-                if (currentUser.type === 'TENANT' && currentUser.tenantId) {
-                    url = `/api/admin/tenants?id=${currentUser.tenantId}`
+                if (sessionData.user.type === 'TENANT' && sessionData.tenant?.id) {
+                    url = `/api/admin/tenants?id=${sessionData.tenant.id}`
                 }
 
                 const res = await fetch(url, {
@@ -44,9 +44,8 @@ export default function PortalPage() {
 
                     const mapped = data.map((t: any) => ({
                         ...t,
-                        // If I am a Tenant Manager, I am MANAGER. If I am Master, I see real status.
-                        role: currentUser.type === 'TENANT' ? currentUser.role : 'ADMIN',
-                        status: t.subscription?.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE' // Simplify status for now
+                        role: sessionData.user.type === 'TENANT' ? sessionData.user.role : 'ADMIN',
+                        status: t.subscription?.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE' 
                     }))
                     setTenants(mapped)
                 }
@@ -62,7 +61,7 @@ export default function PortalPage() {
     }, [])
 
     const handleAccessTenant = (tenant: any) => {
-        const isMaster = user?.role === 'MASTER'
+        const isMaster = user?.user?.role === 'MASTER' || user?.user?.type === 'ADMIN'
 
         if (tenant.status === 'BLOCKED') {
             if (!isMaster) {
@@ -80,12 +79,11 @@ export default function PortalPage() {
             }
         }
 
-        // Set Active Tenant Context (Future Improvement: Context API)
-        // For now just passing via URL or assuming Dashboard loads based on Session + URL params
-        // Ideally we redirect to /dashboard/[tenantId] or save 'current_tenant' to localstorage
+        // Set Active Tenant Context
         sessionStorage.setItem('current_tenant_id', tenant.id)
         console.log(`Accessing Tenant ${tenant.id}`)
-        window.open('/dashboard', '_blank')
+        // Use window.location.href to keep context in same tab or ensure param is passed
+        window.location.href = `/dashboard?tenantId=${tenant.id}`
     }
 
     const handleAccessAdmin = () => {
@@ -113,7 +111,7 @@ export default function PortalPage() {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 bg-stone-900 border border-white/10 px-4 py-2 rounded-full">
                         <User className="w-4 h-4 text-stone-500" />
-                        <span className="text-sm text-gray-300">{user.name}</span>
+                        <span className="text-sm text-gray-300">{user.user?.name || user.name}</span>
                     </div>
                     <button
                         onClick={() => { localStorage.removeItem('guardian_session'); router.push('/') }}
@@ -136,7 +134,7 @@ export default function PortalPage() {
 
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
                         {/* Master Admin Panel Option */}
-                        {(user.role === 'MASTER' || user.type === 'ADMIN') && (
+                        {(user.user?.role === 'MASTER' || user.user?.type === 'ADMIN' || user.type === 'ADMIN') && (
                             <div
                                 onClick={handleAccessAdmin}
                                 className="bg-neutral-900 border border-red-900/30 hover:border-red-600 rounded-2xl p-8 cursor-pointer group transition-all duration-300 hover:shadow-2xl hover:shadow-red-900/20 flex flex-col justify-between h-full max-h-[600px] overflow-hidden"
@@ -154,7 +152,6 @@ export default function PortalPage() {
                                     </p>
                                 </div>
 
-                                <div className="flex items-center text-red-500 font-bold text-sm mt-6">
                                     Acessar Admin <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition" />
                                 </div>
                             </div>

@@ -60,22 +60,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         if (sessionStr) {
             try {
                 const session = JSON.parse(sessionStr)
-                if (session.name) {
-                    const parts = session.name.split(' ')
-                    if (parts.length >= 2) {
-                        setUserInitials((parts[0][0] + parts[1][0]).toUpperCase())
-                    } else {
-                        setUserInitials(session.name.substring(0, 2).toUpperCase())
+                if (session.user) {
+                    if (session.user.name) {
+                        const parts = session.user.name.split(' ')
+                        if (parts.length >= 2) {
+                            setUserInitials((parts[0][0] + parts[1][0]).toUpperCase())
+                        } else {
+                            setUserInitials(session.user.name.substring(0, 2).toUpperCase())
+                        }
                     }
-                }
-                if (session.id) {
-                    setUserId(session.id)
-                }
-                if (session.role) {
-                    setUserRole(session.role)
-                }
-                if (session.type) {
-                    setUserType(session.type)
+                    if (session.user.id) setUserId(session.user.id)
+                    if (session.user.role) setUserRole(session.user.role)
+                    if (session.user.type) setUserType(session.user.type)
+                } else {
+                    // Legacy support or direct fields
+                    if (session.role) setUserRole(session.role)
+                    if (session.type) setUserType(session.type)
                 }
             } catch (error) {}
         }
