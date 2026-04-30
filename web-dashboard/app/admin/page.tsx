@@ -19,6 +19,65 @@ const RECENT_TENANTS = [
     { id: 4, name: 'Hospital São Lucas', owner: 'Saúde Corp', status: 'PENDING', plan: 'R$ 499/mês' },
 ]
 
+const NeonMonitoring = () => {
+    const [neonStats, setNeonStats] = React.useState<any>(null)
+    const [loading, setLoading] = React.useState(true)
+
+    React.useEffect(() => {
+        const fetchNeon = () => {
+            fetch('/api/admin/neon/stats')
+                .then(res => res.json())
+                .then(data => {
+                    setNeonStats(data)
+                    setLoading(false)
+                })
+                .catch(() => setLoading(false))
+        }
+        fetchNeon()
+        const interval = setInterval(fetchNeon, 30000) // Refresh every 30s
+        return () => clearInterval(interval)
+    }, [])
+
+    if (loading) return <div className="animate-pulse bg-stone-900 h-32 rounded-xl border border-white/10"></div>
+
+    return (
+        <div className="bg-stone-900 border border-white/10 p-6 rounded-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all">
+                <Activity className="w-16 h-16 text-blue-500" />
+            </div>
+            
+            <div className="relative z-10 space-y-4">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full animate-pulse ${neonStats?.status === 'ready' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-yellow-500'}`}></div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">NOC - Database Health</h4>
+                    </div>
+                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold border border-blue-500/20">NEON SERVERLESS</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">Project Status</p>
+                        <p className="text-sm font-bold text-white uppercase">{neonStats?.status || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">Region / Engine</p>
+                        <p className="text-sm font-bold text-white">{neonStats?.region} <span className="text-gray-500 font-normal">v{neonStats?.pg_version}</span></p>
+                    </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        <span className="text-[10px] text-gray-400 font-medium">Monitoring {neonStats?.name}</span>
+                    </div>
+                    <span className="text-[9px] text-gray-600 font-mono">ID: old-moon-89343538</span>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export default function AdminDashboard() {
     const [stats, setStats] = React.useState({
         totalTenants: 0,
@@ -156,6 +215,21 @@ export default function AdminDashboard() {
                             <span className="text-xs text-yellow-500/80">Pendente</span>
                         </div>
                         <AlertTriangle className="text-yellow-500 bg-yellow-500/10 p-2 rounded w-8 h-8" />
+                    </div>
+                </div>
+            </div>
+            
+            {/* NOC & Integration Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <NeonMonitoring />
+                <div className="bg-stone-900 border border-white/10 p-6 rounded-xl flex items-center justify-between group cursor-pointer hover:border-blue-500/50 transition-all">
+                    <div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Cloud Connectivity</h4>
+                        <p className="text-2xl font-bold text-white italic">OPERATIONAL</p>
+                        <p className="text-xs text-gray-500 mt-1">Render Deployment Gateway</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Activity className="text-blue-500 w-6 h-6" />
                     </div>
                 </div>
             </div>
