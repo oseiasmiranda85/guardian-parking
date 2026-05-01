@@ -280,76 +280,76 @@ function CashReportsContent() {
 
             {/* PRINT ONLY SECTION - Professional A4 Layout */}
             {printingSession && (
-                <div className="print-container hidden print:block text-black bg-white font-sans leading-tight">
+                <div className="print-container hidden print:block text-black bg-white font-sans leading-tight w-full min-h-screen p-0 m-0">
                     {/* Header */}
-                    <div className="flex justify-between items-start border-b border-stone-300 pb-2 mb-3">
+                    <div className="flex justify-between items-start border-b-2 border-stone-800 pb-4 mb-6">
                         <div>
-                            <h1 className="text-xl font-black uppercase tracking-tighter text-stone-900">{printingSession.tenantName}</h1>
-                            <p className="text-[10px] text-stone-500 font-medium">{printingSession.tenantAddress || 'Gestão Inteligente de Pátios e Eventos'}</p>
+                            <h1 className="text-2xl font-black uppercase tracking-tighter text-black">{printingSession.tenantName}</h1>
+                            <p className="text-[11px] text-stone-600 font-bold uppercase tracking-wide">{printingSession.tenantAddress || 'Gestão Inteligente de Pátios e Eventos'}</p>
                         </div>
                         <div className="text-right">
-                            <h2 className="text-base font-bold text-stone-800 uppercase tracking-tight">Fechamento de Caixa</h2>
-                            <p className="text-[9px] text-stone-500 italic">Emissão: {new Date().toLocaleString('pt-BR')}</p>
+                            <h2 className="text-lg font-black text-black uppercase tracking-tight">Fechamento de Caixa</h2>
+                            <p className="text-[10px] text-stone-500 font-bold">Emissão: {new Date().toLocaleString('pt-BR')}</p>
                         </div>
                     </div>
 
                     {/* Meta Data Grid */}
-                    <div className="grid grid-cols-3 gap-3 mb-3 bg-stone-50 p-3 rounded-lg border border-stone-100">
-                        <div className="space-y-0.5">
-                            <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest">Sessão ID</p>
-                            <p className="text-[10px] font-mono font-bold text-stone-800">{printingSession.id}</p>
+                    <div className="grid grid-cols-3 gap-4 mb-6 border border-stone-200 p-4 rounded-xl">
+                        <div className="space-y-1">
+                            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Sessão ID</p>
+                            <p className="text-[11px] font-mono font-bold text-black">{printingSession.id}</p>
                         </div>
-                        <div className="space-y-0.5">
-                            <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest">Operador</p>
-                            <p className="text-[10px] font-bold text-stone-800 uppercase">{printingSession.operator}</p>
+                        <div className="space-y-1">
+                            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Operador</p>
+                            <p className="text-[11px] font-black text-black uppercase">{printingSession.operator}</p>
                         </div>
-                        <div className="space-y-0.5 text-right">
-                            <p className="text-[8px] font-bold text-stone-400 uppercase tracking-widest">Período</p>
-                            <p className="text-[10px] font-bold text-stone-800">{printingSession.openTime} às {printingSession.closeTime || 'Em Aberto'}</p>
+                        <div className="space-y-1 text-right">
+                            <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Período</p>
+                            <p className="text-[11px] font-black text-black">{printingSession.openTime} às {printingSession.closeTime || 'Em Aberto'}</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-10">
                         {/* Left Column: Payments */}
-                        <div className="space-y-3">
+                        <div className="space-y-6">
                             <div>
-                                <div className="flex items-center gap-1.5 mb-2 border-b border-stone-100 pb-1">
-                                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                                    <h3 className="text-[10px] font-bold text-stone-800 uppercase">Resumo Financeiro</h3>
+                                <div className="flex items-center gap-2 mb-3 border-b-2 border-stone-800 pb-1">
+                                    <CheckCircle className="w-4 h-4 text-black" />
+                                    <h3 className="text-[11px] font-black text-black uppercase tracking-wider">Resumo Financeiro</h3>
                                 </div>
-                                <table className="w-full text-[10px]">
+                                <table className="w-full text-[11px]">
                                     <thead>
-                                        <tr className="text-stone-400 border-b border-stone-100">
-                                            <th className="text-left py-1">Método</th>
-                                            <th className="text-center py-1">Qtd</th>
-                                            <th className="text-right py-1">Total</th>
+                                        <tr className="text-stone-500 border-b border-stone-200">
+                                            <th className="text-left py-2 font-black uppercase text-[9px]">Método</th>
+                                            <th className="text-center py-2 font-black uppercase text-[9px]">Qtd</th>
+                                            <th className="text-right py-2 font-black uppercase text-[9px]">Total</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-stone-50">
+                                    <tbody className="divide-y divide-stone-100">
                                         <tr className="font-bold">
-                                            <td className="py-1.5">Dinheiro</td>
-                                            <td className="py-1.5 text-center">{printingSession.paymentBreakdown?.cash?.count || 0}</td>
-                                            <td className="py-1.5 text-right">R$ {(printingSession.paymentBreakdown?.cash?.total || 0).toFixed(2)}</td>
+                                            <td className="py-2.5">Dinheiro</td>
+                                            <td className="py-2.5 text-center">{printingSession.paymentBreakdown?.cash?.count || 0}</td>
+                                            <td className="py-2.5 text-right">R$ {(printingSession.paymentBreakdown?.cash?.total || 0).toFixed(2)}</td>
                                         </tr>
-                                        <tr className="text-stone-600">
-                                            <td className="py-1">Cartão Crédito</td>
-                                            <td className="py-1 text-center">{printingSession.paymentBreakdown?.credit?.count || 0}</td>
-                                            <td className="py-1 text-right">R$ {(printingSession.paymentBreakdown?.credit?.total || 0).toFixed(2)}</td>
+                                        <tr className="text-stone-700">
+                                            <td className="py-2">Cartão Crédito</td>
+                                            <td className="py-2 text-center">{printingSession.paymentBreakdown?.credit?.count || 0}</td>
+                                            <td className="py-2 text-right">R$ {(printingSession.paymentBreakdown?.credit?.total || 0).toFixed(2)}</td>
                                         </tr>
-                                        <tr className="text-stone-600">
-                                            <td className="py-1">Cartão Débito</td>
-                                            <td className="py-1 text-center">{printingSession.paymentBreakdown?.debit?.count || 0}</td>
-                                            <td className="py-1 text-right">R$ {(printingSession.paymentBreakdown?.debit?.total || 0).toFixed(2)}</td>
+                                        <tr className="text-stone-700">
+                                            <td className="py-2">Cartão Débito</td>
+                                            <td className="py-2 text-center">{printingSession.paymentBreakdown?.debit?.count || 0}</td>
+                                            <td className="py-2 text-right">R$ {(printingSession.paymentBreakdown?.debit?.total || 0).toFixed(2)}</td>
                                         </tr>
-                                        <tr className="text-stone-600">
-                                            <td className="py-1">PIX / Transf.</td>
-                                            <td className="py-1 text-center">{printingSession.paymentBreakdown?.pix?.count || 0}</td>
-                                            <td className="py-1 text-right">R$ {(printingSession.paymentBreakdown?.pix?.total || 0).toFixed(2)}</td>
+                                        <tr className="text-stone-700">
+                                            <td className="py-2 border-b border-stone-200">PIX / Transf.</td>
+                                            <td className="py-2 text-center border-b border-stone-200">{printingSession.paymentBreakdown?.pix?.count || 0}</td>
+                                            <td className="py-2 text-right border-b border-stone-200">R$ {(printingSession.paymentBreakdown?.pix?.total || 0).toFixed(2)}</td>
                                         </tr>
-                                        <tr className="bg-stone-900 text-white font-black">
-                                            <td className="py-2 px-2 rounded-l uppercase text-[9px]">TOTAL GERAL</td>
-                                            <td className="py-2 text-center text-[10px]">{(printingSession.paymentBreakdown?.cash?.count || 0) + (printingSession.paymentBreakdown?.credit?.count || 0) + (printingSession.paymentBreakdown?.debit?.count || 0) + (printingSession.paymentBreakdown?.pix?.count || 0)}</td>
-                                            <td className="py-2 text-right text-[10px] pr-2 rounded-r">R$ {(printingSession.totalCash || 0).toFixed(2)}</td>
+                                        <tr className="text-black font-black border-t-2 border-black">
+                                            <td className="py-3 uppercase text-[10px]">TOTAL ARRECADADO</td>
+                                            <td className="py-3 text-center text-[11px]">{(printingSession.paymentBreakdown?.cash?.count || 0) + (printingSession.paymentBreakdown?.credit?.count || 0) + (printingSession.paymentBreakdown?.debit?.count || 0) + (printingSession.paymentBreakdown?.pix?.count || 0)}</td>
+                                            <td className="py-3 text-right text-[12px]">R$ {(printingSession.totalCash || 0).toFixed(2)}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -357,79 +357,71 @@ function CashReportsContent() {
                         </div>
 
                         {/* Right Column: Operation */}
-                        <div className="space-y-3">
+                        <div className="space-y-6">
                             <div>
-                                <div className="flex items-center gap-1.5 mb-2 border-b border-stone-100 pb-1">
-                                    <Calendar className="w-3.5 h-3.5 text-stone-600" />
-                                    <h3 className="text-[10px] font-bold text-stone-800 uppercase">Resumo por Veículo</h3>
+                                <div className="flex items-center gap-2 mb-3 border-b-2 border-stone-800 pb-1">
+                                    <Calendar className="w-4 h-4 text-black" />
+                                    <h3 className="text-[11px] font-black text-black uppercase tracking-wider">Resumo por Veículo</h3>
                                 </div>
-                                <div className="grid grid-cols-1 gap-1.5">
+                                <div className="grid grid-cols-1 gap-2">
                                     {(printingSession.vehicleTypeBreakdown || []).map((v: any) => (
-                                        <div key={v.type} className="flex justify-between items-center p-2 border border-stone-100 rounded bg-stone-50/50">
-                                            <span className="text-[9px] font-bold text-stone-700 uppercase">{v.type}</span>
+                                        <div key={v.type} className="flex justify-between items-center p-2.5 border border-stone-200 rounded-lg">
+                                            <span className="text-[10px] font-black text-stone-800 uppercase">{v.type}</span>
                                             <div className="text-right">
-                                                <p className="text-[10px] font-black text-stone-900">R$ {(v.total || 0).toFixed(2)}</p>
-                                                <p className="text-[8px] text-stone-500 font-bold uppercase">{v.count || 0} Und</p>
+                                                <p className="text-[11px] font-black text-black">R$ {(v.total || 0).toFixed(2)}</p>
+                                                <p className="text-[9px] text-stone-500 font-bold uppercase">{v.count || 0} Unidades</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-lg">
-                                <div className="flex items-center gap-1.5 mb-1 border-b border-blue-100 pb-1">
-                                    <User className="w-3.5 h-3.5 text-blue-600" />
-                                    <h3 className="text-[10px] font-bold text-blue-800 uppercase">Credenciados</h3>
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <p className="text-[8px] font-bold text-blue-400 uppercase">Total Acessos</p>
-                                        <p className="text-lg font-black text-blue-700">{printingSession.accreditedCount || 0}</p>
+                            <div className="grid grid-cols-1 gap-3">
+                                <div className="p-3 border-2 border-blue-100 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Credenciados</p>
+                                            <p className="text-xl font-black text-blue-800">{printingSession.accreditedCount || 0}</p>
+                                        </div>
+                                        <p className="text-[9px] font-bold text-blue-400 italic">Acessos Mensalistas</p>
                                     </div>
-                                    <p className="text-[8px] font-bold text-blue-500 italic">Mensalistas</p>
                                 </div>
-                            </div>
 
-                            <div className="p-2.5 bg-purple-50 border border-purple-100 rounded-lg">
-                                <div className="flex items-center gap-1.5 mb-1 border-b border-purple-100 pb-1">
-                                    <CheckCircle className="w-3.5 h-3.5 text-purple-600" />
-                                    <h3 className="text-[10px] font-bold text-purple-800 uppercase">Cortesias</h3>
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <p className="text-[8px] font-bold text-purple-400 uppercase">Total Emitido</p>
-                                        <p className="text-lg font-black text-purple-700">{printingSession.courtesyCount || 0}</p>
+                                <div className="p-3 border-2 border-purple-100 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[9px] font-black text-purple-500 uppercase tracking-widest">Cortesias</p>
+                                            <p className="text-xl font-black text-purple-800">{printingSession.courtesyCount || 0}</p>
+                                        </div>
+                                        <p className="text-[9px] font-bold text-purple-400 italic">Isenções Emitidas</p>
                                     </div>
-                                    <p className="text-[8px] font-bold text-purple-500 italic">Isenções</p>
                                 </div>
-                            </div>
 
-                            <div className="p-2.5 bg-red-50 border border-red-100 rounded-lg">
-                                <div className="flex items-center gap-1.5 mb-1 border-b border-red-100 pb-1">
-                                    <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-                                    <h3 className="text-[10px] font-bold text-red-800 uppercase">Estornos</h3>
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <div>
-                                        <p className="text-[8px] font-bold text-red-400 uppercase">Total Cancelado</p>
-                                        <p className="text-lg font-black text-red-700">R$ {(printingSession.cancelledSummary?.total || 0).toFixed(2)}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[8px] font-bold text-red-400 uppercase">Qtd</p>
-                                        <p className="text-base font-bold text-red-800">{printingSession.cancelledSummary?.count || 0}</p>
+                                <div className="p-3 border-2 border-red-100 rounded-xl">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="text-[9px] font-black text-red-500 uppercase tracking-widest">Estornos</p>
+                                            <p className="text-xl font-black text-red-800">R$ {(printingSession.cancelledSummary?.total || 0).toFixed(2)}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[9px] font-black text-red-400 uppercase">{printingSession.cancelledSummary?.count || 0} Qtd</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="mt-6 pt-2 border-t border-stone-100 flex justify-between items-center text-stone-400 text-[8px]">
-                        <div className="font-bold uppercase">
+                    {/* Footer / Signatures */}
+                    <div className="mt-12 pt-6 border-t-2 border-stone-800 flex justify-between items-start text-stone-500 text-[10px]">
+                        <div className="font-black uppercase tracking-widest text-black">
                             Guardian Parking System • Auditoria Financeira
                         </div>
-                        <div className="italic">
-                            Responsável: __________________________________________
+                        <div className="space-y-8 text-right">
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="w-64 border-b border-black"></div>
+                                <p className="font-bold uppercase tracking-tighter text-black">Assinatura do Responsável</p>
+                            </div>
                         </div>
                     </div>
                 </div>
