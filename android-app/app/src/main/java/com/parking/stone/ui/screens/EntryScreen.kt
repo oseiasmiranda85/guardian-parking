@@ -87,6 +87,13 @@ fun EntryScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState() // Scrollable Form
+    val cameraExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
     
     // Sync Config on Load
     LaunchedEffect(Unit) {
@@ -399,7 +406,7 @@ fun EntryScreen(navController: NavController) {
                          if (imageCapture != null && !isProcessing) {
                              isProcessing = true
                              imageCapture!!.takePicture(
-                                 Executors.newSingleThreadExecutor(),
+                                 cameraExecutor,
                                  object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
                                      override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
                                          val buffer = image.planes[0].buffer

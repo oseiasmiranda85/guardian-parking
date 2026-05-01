@@ -92,6 +92,13 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
         cameraActive = true
     }
 
+    val cameraExecutor = remember { java.util.concurrent.Executors.newSingleThreadExecutor() }
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+        }
+    }
+
     // Recent Entries List
     var recentEntries by remember { mutableStateOf<List<ParkingEntry>>(emptyList()) }
 
@@ -144,7 +151,15 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                 if (cameraActive) {
                     CameraPreview(
                         flashEnabled = flashEnabled,
-                        onPlateDetected = { /* Real-time disabled per user preference */ },
+                        onPlateDetected = { result -> 
+                            resetInactivity()
+                            // Point-and-read only for Numeric IDs (QR Tickets) to avoid OCR errors on plates
+                            if (result.isNotEmpty() && result.all { it.isDigit() }) {
+                                if (!isProcessing && foundEntry == null) {
+                                    processManualResult(result)
+                                }
+                            }
+                        },
                         onCaptureReady = { capture -> imageCapture = capture }
                     )
                 } else {
@@ -164,7 +179,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                             resetInactivity()
                             isProcessing = true
                             imageCapture!!.takePicture(
-                                Executors.newSingleThreadExecutor(),
+                                cameraExecutor,
                                 object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
                                     override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
                                         val buffer = image.planes[0].buffer

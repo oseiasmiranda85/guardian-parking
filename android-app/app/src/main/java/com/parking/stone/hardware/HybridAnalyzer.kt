@@ -27,37 +27,10 @@ class HybridAnalyzer(
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
-        val startTime = System.currentTimeMillis()
-        
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
-            // Optimization: Convert to Bitmap and Pre-process
-            val bitmap = imageProxyToBitmap(imageProxy)
-            if (bitmap == null) {
-                imageProxy.close()
-                return
-            }
-
-            // Crop to center (ROI - Region of Interest)
-            val originalWidth = bitmap.width
-            val originalHeight = bitmap.height
-            val cropWidth = (originalWidth * 0.8).toInt()
-            val cropHeight = (originalHeight * 0.4).toInt()
-            val cropX = (originalWidth - cropWidth) / 2
-            val cropY = (originalHeight - cropHeight) / 2
-            
-            val croppedBitmap = android.graphics.Bitmap.createBitmap(bitmap, cropX, cropY, cropWidth, cropHeight)
-            
-            // Scale down for faster OCR
-            val scale = 0.6f
-            val scaledBitmap = android.graphics.Bitmap.createScaledBitmap(
-                croppedBitmap, 
-                (cropWidth * scale).toInt(), 
-                (cropHeight * scale).toInt(), 
-                false
-            )
-
-            val image = InputImage.fromBitmap(scaledBitmap, 0)
+            // Optimization: Use native InputImage for real-time to save memory/CPU
+            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
             barcodeScanner.process(image)
                 .addOnSuccessListener { barcodes ->
@@ -72,13 +45,8 @@ class HybridAnalyzer(
                     
                     textRecognizer.process(image)
                         .addOnSuccessListener { visionText ->
-                            val processTime = (System.currentTimeMillis() - startTime).toInt()
                             processText(visionText) {
-                                TelemetryManager.logEvent(
-                                    context = context,
-                                    eventType = "OCR_FRAME",
-                                    ocrTime = processTime
-                                )
+                                // Real-time feedback if needed
                             }
                         }
                         .addOnCompleteListener {
