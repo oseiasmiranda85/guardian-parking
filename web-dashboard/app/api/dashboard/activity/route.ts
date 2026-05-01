@@ -40,7 +40,7 @@ export async function GET(request: Request) {
             type: t.pricingTableId ? 'Tabelado' : 'Rotativo',
             time: new Date(t.entryTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }),
             status: t.status,
-            amount: t.amountPaid !== null ? t.amountPaid : (t.amountDue || 0)
+            amount: t.ticketType === 'CORTESIA' ? 0 : (t.amountPaid !== null ? t.amountPaid : (t.amountDue || 0))
         }))
 
         return NextResponse.json(activity)

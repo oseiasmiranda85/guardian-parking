@@ -85,6 +85,9 @@ interface ParkingDao {
     @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND category = 'CREDENCIADO' AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) )")
     suspend fun getAccreditedStats(operatorId: String, startTime: Long, tenantId: Int): SimpleStat
 
+    @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE (LOWER(operatorId) = LOWER(:operatorId) OR LOWER(exitDeviceId) = LOWER(:deviceId)) AND (paymentMethod = 'CORTESIA' OR category = 'CORTESIA') AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) )")
+    suspend fun getCourtesyStats(operatorId: String, startTime: Long, tenantId: Int, deviceId: String): SimpleStat
+
     @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND exitTime IS NOT NULL AND amount = 0 AND isPaid = 0 AND tenantId = :tenantId AND exitTime >= :startTime")
     suspend fun getToleranceStats(operatorId: String, startTime: Long, tenantId: Int): SimpleStat
 

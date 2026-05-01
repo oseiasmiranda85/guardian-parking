@@ -121,13 +121,27 @@ export async function GET(request: Request) {
                 vehicleTypes[type].total += tx.amount || 0;
             });
 
-            // Accredited Count
+            // Accredited Count (Entries or Exits by this operator in this window)
             const accreditedCount = await prisma.ticket.count({
                 where: {
                     tenantId: s.tenantId,
-                    exitOperatorId: s.userId,
-                    updatedAt: { gte: s.startTime, lt: windowEnd },
-                    ticketType: 'CREDENCIADO'
+                    OR: [
+                        { entryOperatorId: s.userId, entryTime: { gte: s.startTime, lt: windowEnd } },
+                        { exitOperatorId: s.userId, exitTime: { gte: s.startTime, lt: windowEnd } }
+                    ],
+                    ticketType: { in: ['CREDENCIADO', 'ACCREDITED'] }
+                }
+            });
+
+            // Courtesy Count (Entries or Exits by this operator in this window)
+            const courtesyCount = await prisma.ticket.count({
+                where: {
+                    tenantId: s.tenantId,
+                    OR: [
+                        { entryOperatorId: s.userId, entryTime: { gte: s.startTime, lt: windowEnd } },
+                        { exitOperatorId: s.userId, exitTime: { gte: s.startTime, lt: windowEnd } }
+                    ],
+                    ticketType: 'CORTESIA'
                 }
             });
 
@@ -135,7 +149,10 @@ export async function GET(request: Request) {
             const cancelledTickets = await prisma.ticket.findMany({
                 where: {
                     tenantId: s.tenantId,
-                    exitOperatorId: s.userId,
+                    OR: [
+                        { entryOperatorId: s.userId },
+                        { exitOperatorId: s.userId }
+                    ],
                     updatedAt: { gte: s.startTime, lt: windowEnd },
                     status: { in: ['CANCELLED', 'REFUNDED'] }
                 }
@@ -165,7 +182,8 @@ export async function GET(request: Request) {
                 })),
                 cancelledSummary,
                 vehicleCount: transactions.length,
-                accreditedCount
+                accreditedCount,
+                courtesyCount
             };
         }));
 

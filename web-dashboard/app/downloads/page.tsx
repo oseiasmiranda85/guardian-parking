@@ -5,9 +5,9 @@ import { Download, Smartphone, ShieldCheck, Zap, RefreshCcw } from 'lucide-react
 import Link from 'next/link'
 
 export default function DownloadsPage() {
-    const currentVersion = "2.1.2"
-    const releaseDate = "01 de Maio, 2026 (01:10)"
-    const apkUrl = "/downloads/guardian-v2.1.2.apk"
+    const currentVersion = "2.1.3"
+    const releaseDate = "01 de Maio, 2026 (01:40)"
+    const apkUrl = "/downloads/guardian-v2.1.3.apk"
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -94,10 +94,10 @@ export default function DownloadsPage() {
                     <h3 className="text-center text-sm font-black text-gray-500 uppercase tracking-widest">O que há de novo na v{currentVersion}</h3>
                     <ul className="space-y-4">
                         {[
-                            "Lógica de Cortesia: Valor R$ 0,00 fixo para evitar erros financeiros no fechamento",
-                            "Reconciliação de Estornos: Tickets cancelados aparecem corretamente no relatório da sessão",
-                            "Correção Capacetes: Botões de seleção 1 e 2 restaurados e fluxo de Wizard otimizado",
-                            "Sincronismo de Configuração: Flags do portal (como controle de capacetes) aplicadas instantaneamente",
+                            "Relatório Financeiro: Inclusão de contador de cortesias e isenções no Portal e no Terminal",
+                            "Auditoria de Caixa: Reconciliação automática de cortesias para evitar faturamento inflado",
+                            "Impressão: Novo layout de fechamento de caixa (Z-Report) com resumo detalhado de isenções",
+                            "Estabilidade: Otimização da API de Atividade para visualização consolidada no Dashboard",
                             "Estabilidade: Atualização do esquema do banco de dados local (v14) para melhor auditoria"
                         ].map((note, i) => (
                             <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">

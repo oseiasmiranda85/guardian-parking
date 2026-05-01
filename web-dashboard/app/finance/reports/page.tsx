@@ -238,6 +238,12 @@ function CashReportsContent() {
 
                                 {/* Right Stats & Actions */}
                                 <div className="flex items-center gap-6 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-8 w-full md:w-auto">
+                                    <div className="text-right mr-4 border-l border-white/5 pl-4 hidden md:block">
+                                        <p className="text-[10px] text-gray-500 uppercase font-bold">Isenções</p>
+                                        <p className="text-sm font-bold text-purple-400">
+                                            {session.courtesyCount || 0} Cort.
+                                        </p>
+                                    </div>
                                     <div className="text-right mr-4">
                                         <p className="text-xs text-gray-500 uppercase font-bold">Total Arrecadado</p>
                                         <p className="text-2xl font-bold text-green-500">
@@ -381,6 +387,20 @@ function CashReportsContent() {
                                         <p className="text-lg font-black text-blue-700">{printingSession.accreditedCount || 0}</p>
                                     </div>
                                     <p className="text-[8px] font-bold text-blue-500 italic">Mensalistas</p>
+                                </div>
+                            </div>
+
+                            <div className="p-2.5 bg-purple-50 border border-purple-100 rounded-lg">
+                                <div className="flex items-center gap-1.5 mb-1 border-b border-purple-100 pb-1">
+                                    <CheckCircle className="w-3.5 h-3.5 text-purple-600" />
+                                    <h3 className="text-[10px] font-bold text-purple-800 uppercase">Cortesias</h3>
+                                </div>
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[8px] font-bold text-purple-400 uppercase">Total Emitido</p>
+                                        <p className="text-lg font-black text-purple-700">{printingSession.courtesyCount || 0}</p>
+                                    </div>
+                                    <p className="text-[8px] font-bold text-purple-500 italic">Isenções</p>
                                 </div>
                             </div>
 

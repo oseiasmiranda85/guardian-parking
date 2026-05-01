@@ -181,7 +181,8 @@ class ReceiptPrinter {
         vehicleStats: List<com.parking.stone.data.VehicleStat>,
         cancelledStat: com.parking.stone.data.CancelledStat,
         accreditedStat: com.parking.stone.data.SimpleStat,
-        toleranceStat: com.parking.stone.data.SimpleStat
+        toleranceStat: com.parking.stone.data.SimpleStat,
+        courtesyStat: com.parking.stone.data.SimpleStat
     ) {
         val timestamp = SimpleDateFormat("dd/MM/yyyy, HH:mm:ss", Locale.getDefault()).format(Date())
         val terminalId = com.parking.stone.data.DeviceManager.displayName
@@ -230,6 +231,9 @@ class ReceiptPrinter {
         if (accreditedStat.count > 0) {
             zReport.append(String.format("%-15s %3d %10.2f\n", "CREDENCIADOS", accreditedStat.count, 0.0))
         }
+        if (courtesyStat.count > 0) {
+            zReport.append(String.format("%-15s %3d %10.2f\n", "CORTESIAS", courtesyStat.count, 0.0))
+        }
         if (toleranceStat.count > 0) {
             zReport.append(String.format("%-15s %3d %10.2f\n", "TOLERANCIA", toleranceStat.count, 0.0))
         }
@@ -263,6 +267,7 @@ class ReceiptPrinter {
         }.toMutableList()
         
         if (accreditedStat.count > 0) paymentJsonList.add("{\"label\": \"CREDENCIADOS\", \"count\": ${accreditedStat.count}, \"total\": 0.0}")
+        if (courtesyStat.count > 0) paymentJsonList.add("{\"label\": \"CORTESIAS\", \"count\": ${courtesyStat.count}, \"total\": 0.0}")
         if (toleranceStat.count > 0) paymentJsonList.add("{\"label\": \"TOLERANCIA\", \"count\": ${toleranceStat.count}, \"total\": 0.0}")
 
         val json = """
@@ -278,7 +283,8 @@ class ReceiptPrinter {
                 "terminal": "$terminalId",
                 "timestamp": "$timestamp",
                 "cancelledCount": ${cancelledStat.count},
-                "cancelledTotal": ${cancelledStat.total}
+                "cancelledTotal": ${cancelledStat.total},
+                "courtesyCount": ${courtesyStat.count}
             }
         """.trimIndent()
         

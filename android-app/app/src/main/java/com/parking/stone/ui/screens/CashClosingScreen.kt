@@ -59,6 +59,7 @@ fun CashClosingScreen(navController: NavController) {
     var cancelledStat by remember { mutableStateOf(com.parking.stone.data.CancelledStat(0, 0.0)) }
     var accreditedStat by remember { mutableStateOf(com.parking.stone.data.SimpleStat(0, 0.0)) }
     var toleranceStat by remember { mutableStateOf(com.parking.stone.data.SimpleStat(0, 0.0)) }
+    var courtesyStat by remember { mutableStateOf(com.parking.stone.data.SimpleStat(0, 0.0)) }
     var grandTotal by remember { mutableStateOf(0.0) }
     
     // Load Session Data
@@ -82,6 +83,7 @@ fun CashClosingScreen(navController: NavController) {
             val cStat = db.parkingDao().getCancelledStats(opIdStr, startTime, SessionManager.tenantId)
             val aStat = db.parkingDao().getAccreditedStats(opIdStr, startTime, SessionManager.tenantId)
             val tStat = db.parkingDao().getToleranceStats(opIdStr, startTime, SessionManager.tenantId)
+            val coStat = db.parkingDao().getCourtesyStats(opIdStr, startTime, SessionManager.tenantId, com.parking.stone.data.DeviceManager.deviceId)
             
             entriesInSession = db.parkingDao().getOperatorEntryCount(opIdStr, startTime, SessionManager.tenantId)
             
@@ -90,6 +92,7 @@ fun CashClosingScreen(navController: NavController) {
             cancelledStat = cStat
             accreditedStat = aStat
             toleranceStat = tStat
+            courtesyStat = coStat
             grandTotal = pStats.sumOf { it.total }
             totalRevenue = grandTotal
         } else {
@@ -211,6 +214,9 @@ fun CashClosingScreen(navController: NavController) {
                     if (accreditedStat.count > 0) {
                         DetailRow("Credenciados registrados", "${accreditedStat.count} un")
                     }
+                    if (courtesyStat.count > 0) {
+                        DetailRow("Cortesias emitidas", "${courtesyStat.count} un")
+                    }
                     
                     Divider(color = Color.Gray.copy(alpha=0.3f))
                     
@@ -290,7 +296,7 @@ fun CashClosingScreen(navController: NavController) {
                              val db = AppDatabase.getDatabase(context)
                              val session = db.cashDao().getCurrentOpenSession(SessionManager.tenantId)
                              if (session != null) {
-                                 ReceiptPrinter().printZReport(session.id, operatorName, grandTotal, paymentStats, vehicleStats, cancelledStat, accreditedStat, toleranceStat)
+                                 ReceiptPrinter().printZReport(session.id, operatorName, grandTotal, paymentStats, vehicleStats, cancelledStat, accreditedStat, toleranceStat, courtesyStat)
                                  Toast.makeText(context, "Relatório Impresso!", Toast.LENGTH_SHORT).show()
                              }
                         }
@@ -307,7 +313,7 @@ fun CashClosingScreen(navController: NavController) {
                             val session = db.cashDao().getCurrentOpenSession(SessionManager.tenantId)
                             if (session != null) {
                                 db.cashDao().closeSession(session.id, System.currentTimeMillis(), 0.0, grandTotal)
-                                ReceiptPrinter().printZReport(session.id, operatorName, grandTotal, paymentStats, vehicleStats, cancelledStat, accreditedStat, toleranceStat)
+                                ReceiptPrinter().printZReport(session.id, operatorName, grandTotal, paymentStats, vehicleStats, cancelledStat, accreditedStat, toleranceStat, courtesyStat)
                                 com.parking.stone.data.XSync(db.parkingDao()).apply { syncTickets(context); syncSessions() }
                                 SessionManager.logout(context)
                                 navController.navigate("login") { popUpTo(0) }
