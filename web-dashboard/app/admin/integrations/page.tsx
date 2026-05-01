@@ -106,6 +106,193 @@ const NeonMonitoring = () => {
     )
 }
 
+const TelemetryMonitoring = () => {
+    const [stats, setStats] = React.useState<any>(null)
+    const [loading, setLoading] = React.useState(true)
+
+    React.useEffect(() => {
+        const fetchStats = () => {
+            fetch('/api/admin/system/telemetry/stats')
+                .then(res => res.json())
+                .then(data => {
+                    setStats(data)
+                    setLoading(false)
+                })
+                .catch(() => setLoading(false))
+        }
+        fetchStats()
+        const interval = setInterval(fetchStats, 30000) 
+        return () => clearInterval(interval)
+    }, [])
+
+    if (loading) return null
+
+    const getStatusColor = (val: number, type: 'ocr' | 'api' | 'total') => {
+        if (type === 'ocr') return val < 500 ? 'text-emerald-500' : val < 1500 ? 'text-yellow-500' : 'text-red-500'
+        if (type === 'api') return val < 200 ? 'text-emerald-500' : val < 600 ? 'text-yellow-500' : 'text-red-500'
+        return val < 3000 ? 'text-emerald-500' : val < 6000 ? 'text-yellow-500' : 'text-red-500'
+    }
+
+    const getTrend = (recent: number, overall: number) => {
+        if (!recent || !overall) return null
+        const diff = ((recent - overall) / overall) * 100
+        if (Math.abs(diff) < 5) return { label: 'Estável', color: 'text-gray-500' }
+        if (diff > 0) return { label: `+${diff.toFixed(0)}% lento`, color: 'text-red-500' }
+        return { label: `${diff.toFixed(0)}% rápido`, color: 'text-emerald-500' }
+    }
+
+    return (
+        <div className="space-y-6 mb-10">
+            <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
+                    <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-500">Eficiência de Borda • Telemetria PDV</h3>
+                </div>
+                {stats?.overall?.avgOcr > 1000 && (
+                    <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full animate-bounce">
+                        <AlertCircle className="w-3 h-3 text-red-500" />
+                        <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Alerta de Latência OCR</span>
+                    </div>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* OCR Speed */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] group hover:bg-black transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <ShieldCheck className="w-12 h-12 text-white" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2 flex justify-between">Velocidade OCR <span className="text-[8px] text-gray-700">IA ENGINE</span></p>
+                    <div className="flex items-baseline gap-1">
+                        <span className={`text-3xl font-black italic ${getStatusColor(stats?.overall?.avgOcr, 'ocr')}`}>{stats?.overall?.avgOcr || '0'}</span>
+                        <span className="text-[10px] text-gray-600 uppercase font-bold">ms</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className={`text-[9px] font-bold uppercase ${getTrend(stats?.recent?.avgOcr, stats?.overall?.avgOcr)?.color}`}>
+                            {getTrend(stats?.recent?.avgOcr, stats?.overall?.avgOcr)?.label}
+                        </span>
+                        <span className="text-[9px] text-gray-700 uppercase font-mono">24h vs Total</span>
+                    </div>
+                </div>
+
+                {/* Processing Time */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] group hover:bg-black transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Activity className="w-12 h-12 text-white" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Fluxo Total (Ticket)</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className={`text-3xl font-black italic ${getStatusColor(stats?.overall?.avgTotal, 'total')}`}>{((stats?.overall?.avgTotal || 0) / 1000).toFixed(1)}</span>
+                        <span className="text-[10px] text-gray-600 uppercase font-bold">seg</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className={`text-[9px] font-bold uppercase ${getTrend(stats?.recent?.avgTotal, stats?.overall?.avgTotal)?.color}`}>
+                            {getTrend(stats?.recent?.avgTotal, stats?.overall?.avgTotal)?.label}
+                        </span>
+                        <span className="text-[9px] text-gray-700 uppercase font-mono">24h vs Total</span>
+                    </div>
+                </div>
+
+                {/* API Latency */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] group hover:bg-black transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Wifi className="w-12 h-12 text-white" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Latência Sincronismo</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className={`text-3xl font-black italic ${getStatusColor(stats?.overall?.avgApi, 'api')}`}>{stats?.overall?.avgApi || '0'}</span>
+                        <span className="text-[10px] text-gray-600 uppercase font-bold">ms</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className={`text-[9px] font-bold uppercase ${getTrend(stats?.recent?.avgApi, stats?.overall?.avgApi)?.color}`}>
+                            {getTrend(stats?.recent?.avgApi, stats?.overall?.avgApi)?.label}
+                        </span>
+                        <span className="text-[9px] text-gray-700 uppercase font-mono">24h vs Total</span>
+                    </div>
+                </div>
+
+                {/* Capture Time */}
+                <div className="bg-stone-900/60 border border-white/10 p-6 rounded-[32px] group hover:bg-black transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Database className="w-12 h-12 text-white" />
+                    </div>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Hardware I/O (Foto)</p>
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-3xl font-black text-white italic">{stats?.overall?.avgCapture || '0'}</span>
+                        <span className="text-[10px] text-gray-600 uppercase font-bold">ms</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className={`text-[9px] font-bold uppercase ${getTrend(stats?.recent?.avgCapture, stats?.overall?.avgCapture)?.color}`}>
+                            {getTrend(stats?.recent?.avgCapture, stats?.overall?.avgCapture)?.label}
+                        </span>
+                        <span className="text-[9px] text-gray-700 uppercase font-mono">24h vs Total</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const IncidentLog = () => {
+    const [incidents, setIncidents] = React.useState<any[]>([])
+    const [loading, setLoading] = React.useState(true)
+
+    React.useEffect(() => {
+        const fetchIncidents = () => {
+            fetch('/api/admin/system/telemetry/incidents')
+                .then(res => res.json())
+                .then(data => {
+                    setIncidents(Array.isArray(data) ? data : [])
+                    setLoading(false)
+                })
+                .catch(() => setLoading(false))
+        }
+        fetchIncidents()
+        const interval = setInterval(fetchIncidents, 20000)
+        return () => clearInterval(interval)
+    }, [])
+
+    if (incidents.length === 0 && !loading) return null
+
+    return (
+        <div className="bg-stone-950 border border-red-500/20 rounded-[40px] p-8 mb-10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+                <AlertCircle className="w-32 h-32 text-red-500" />
+            </div>
+            <div className="flex items-center gap-3 mb-6">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                <h3 className="text-sm font-black uppercase tracking-[0.3em] text-red-500">Log de Incidentes de Performance</h3>
+            </div>
+
+            <div className="space-y-4">
+                {incidents.map((incident, idx) => (
+                    <div key={incident.id} className="flex items-center justify-between bg-white/2 border border-white/5 p-4 rounded-2xl hover:bg-white/5 transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <span className="text-[10px] font-black text-red-500">!</span>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-white uppercase tracking-widest">{incident.eventType}</p>
+                                <p className="text-[9px] text-gray-500 uppercase">{incident.tenant?.name || 'Terminal Desconhecido'}</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-mono text-red-400">
+                                {incident.ocrTimeMs ? `OCR: ${incident.ocrTimeMs}ms` : 
+                                 incident.totalProcessTimeMs ? `FLUXO: ${incident.totalProcessTimeMs}ms` : 
+                                 `LATÊNCIA: ${incident.apiLatencyMs}ms`}
+                            </p>
+                            <p className="text-[8px] text-gray-600 font-mono uppercase">
+                                {new Date(incident.timestamp).toLocaleTimeString()}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 export default function IntegrationsDashboard() {
     const [internal, setInternal] = useState<ServiceStatus[]>([])
     const [external, setExternal] = useState<ServiceStatus[]>([])
@@ -232,6 +419,8 @@ export default function IntegrationsDashboard() {
             </div>
             
             <NeonMonitoring />
+            <TelemetryMonitoring />
+            <IncidentLog />
 
             {/* Filter Section */}
             <div className="flex items-center gap-4 bg-stone-900/30 p-4 rounded-2xl border border-white/5">

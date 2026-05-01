@@ -64,6 +64,7 @@ model Tenant {
   globalRequireExitTicket Boolean            @default(true)
   defaultTicketLayout  String                @default("FULL")
   courtesyThreshold    Float                 @default(5.0)
+  telemetry            PerformanceTelemetry[]
 }
 
 model Subscription {
@@ -276,4 +277,18 @@ model VirtualTicket {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+}
+
+model PerformanceTelemetry {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int
+  deviceId        String
+  eventType       String   // ENTRY, EXIT, OCR
+  ocrTimeMs       Int?     // Tempo de leitura da placa
+  captureTimeMs   Int?     // Tempo de captura da foto
+  totalProcessTimeMs Int?  // Tempo total (foto até impressão)
+  apiLatencyMs    Int?     // Latência da API de sincronia
+  timestamp       DateTime @default(now())
+  
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
 }
