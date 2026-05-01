@@ -23,10 +23,11 @@ O Dashboard deve refletir a disponibilidade da nova versão para os administrado
 ## 🔴 3. Regra de Ouro (CRÍTICO)
 > [!IMPORTANT]
 > **Sempre que uma correção for feita (Bug Fix):**
-> 1. É OBRIGATÓRIO fazer o deploy total de todas as alterações para o servidor.
-> 2. É OBRIGATÓRIO subir a versão (`versionCode` e `versionName`) no app.
-> 3. É OBRIGATÓRIO atualizar o banner e as notas de versão na **Página de Downloads** e na **Central Admin**.
-> 4. NUNCA entregue uma correção sem disponibilizar o novo APK para download imediato.
+> 1. O Assistente IA é responsável por fazer o **Git Commit** de todas as alterações.
+> 2. O Assistente IA é responsável por **gerar o novo APK** (`assembleRelease`).
+> 3. O Assistente IA é responsável por **publicar o APK** na pasta `public/downloads` e atualizar a Página de Downloads.
+> 4. O Assistente IA deve disparar o **Git Push** para ativar o deploy automático no Render.
+> 5. NUNCA finalize uma tarefa de correção sem que o novo APK vX.X.X esteja disponível para download real.
 
 ## 🚀 3. Procedimento de Deploy
 1. Executar `./gradlew assembleRelease` no diretório Android.
