@@ -25,7 +25,7 @@ O Dashboard deve refletir a disponibilidade da nova versão para os administrado
 > **Sempre que uma correção for feita (Bug Fix):**
 > 1. O Assistente IA é responsável por fazer o **Git Commit** de todas as alterações.
 > 2. O Assistente IA é responsável por **gerar o novo APK** (`assembleRelease`).
-> 3. O Assistente IA é responsável por **publicar o APK** na pasta `public/downloads` e atualizar a Página de Downloads.
+> 3. O Assistente IA é responsável por **publicar o APK** na pasta `public/downloads` e atualizar a **Página de Downloads** dedicada, incluindo obrigatoriamente o Changelog detalhado com todas as melhorias e correções da versão.
 > 4. O Assistente IA deve disparar o **Git Push** para ativar o deploy automático no Render.
 > 5. NUNCA finalize uma tarefa de correção sem que o novo APK vX.X.X esteja disponível para download real.
 
