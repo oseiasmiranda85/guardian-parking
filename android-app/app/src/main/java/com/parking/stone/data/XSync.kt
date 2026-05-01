@@ -76,9 +76,10 @@ class XSync(private val dao: ParkingDao) {
                     isPaid = ct.isPaid,
                     amount = ct.amount,
                     operatorId = ct.operatorId,
+                    paymentMethod = ct.paymentMethod,
                     tenantId = tenantId,
                     category = ct.category ?: "ROTATIVO",
-                    billingMode = ct.billingMode ?: "POSTPAID",
+                    billingMode = ct.billingMode ?: "PREPAID",
                     deviceId = ct.deviceId,
                     photoUrl = ct.photoUrl,
                     isSynced = true // It came from cloud, so it's synced

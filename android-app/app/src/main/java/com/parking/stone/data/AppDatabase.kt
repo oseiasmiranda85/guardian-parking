@@ -62,26 +62,27 @@ interface ParkingDao {
     @androidx.room.Update
     suspend fun updateEntry(entry: ParkingEntry): Int
 
-    // Statistics for Closing
-    @Query("SELECT paymentMethod, SUM(amount) as total, COUNT(*) as count FROM parking_entries WHERE operatorId = :operatorId AND entryTime >= :startTime AND isPaid = 1 AND isCancelled = 0 AND tenantId = :tenantId GROUP BY paymentMethod")
+    // Statistics for Closing (Filter by payment/exit time, not entry time)
+    // Statistics for Closing (Combined Hibrid Logic: PREPAID uses entryTime, POSTPAID uses exitTime)
+    @Query("SELECT paymentMethod, SUM(amount) as total, COUNT(*) as count FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND isPaid = 1 AND isCancelled = 0 AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) ) GROUP BY paymentMethod")
     suspend fun getPaymentStats(operatorId: String, startTime: Long, tenantId: Int): List<PaymentStat>
 
-    @Query("SELECT type, COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE operatorId = :operatorId AND entryTime >= :startTime AND isPaid = 1 AND isCancelled = 0 AND tenantId = :tenantId GROUP BY type")
+    @Query("SELECT type, COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND isPaid = 1 AND isCancelled = 0 AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) ) GROUP BY type")
     suspend fun getVehicleStats(operatorId: String, startTime: Long, tenantId: Int): List<VehicleStat>
 
-    @Query("SELECT COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE operatorId = :operatorId AND entryTime >= :startTime AND isCancelled = 1 AND tenantId = :tenantId")
+    @Query("SELECT COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND isCancelled = 1 AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) )")
     suspend fun getCancelledStats(operatorId: String, startTime: Long, tenantId: Int): CancelledStat
 
     @Query("SELECT COUNT(*) FROM parking_entries WHERE exitTime IS NULL AND tenantId = :tenantId AND isCancelled = 0")
     suspend fun getActiveVehicleCount(tenantId: Int): Int
 
-    @Query("SELECT COUNT(*) FROM parking_entries WHERE operatorId = :operatorId AND entryTime >= :startTime AND tenantId = :tenantId")
+    @Query("SELECT COUNT(*) FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND entryTime >= :startTime AND tenantId = :tenantId")
     suspend fun getOperatorEntryCount(operatorId: String, startTime: Long, tenantId: Int): Int
 
-    @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE operatorId = :operatorId AND entryTime >= :startTime AND category = 'CREDENCIADO' AND tenantId = :tenantId")
+    @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND category = 'CREDENCIADO' AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) )")
     suspend fun getAccreditedStats(operatorId: String, startTime: Long, tenantId: Int): SimpleStat
 
-    @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE operatorId = :operatorId AND entryTime >= :startTime AND exitTime IS NOT NULL AND amount = 0 AND isPaid = 0 AND tenantId = :tenantId")
+    @Query("SELECT COUNT(*) as count, 0.0 as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND exitTime IS NOT NULL AND amount = 0 AND isPaid = 0 AND tenantId = :tenantId AND exitTime >= :startTime")
     suspend fun getToleranceStats(operatorId: String, startTime: Long, tenantId: Int): SimpleStat
 
     @Query("SELECT * FROM cash_sessions WHERE tenantId = :tenantId")

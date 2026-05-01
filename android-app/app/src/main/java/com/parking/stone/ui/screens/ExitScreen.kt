@@ -549,7 +549,9 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                              exitTime = System.currentTimeMillis(),
                                              paymentMethod = if(foundEntry!!.isPaid) foundEntry!!.paymentMethod else (if(calculatedFee == 0.0) "ISENTO" else paymentMethod),
                                              isSynced = false,
-                                             exitDeviceId = com.parking.stone.data.DeviceManager.deviceId
+                                             exitDeviceId = com.parking.stone.data.DeviceManager.deviceId,
+                                             operatorId = if(foundEntry!!.isPaid) foundEntry!!.operatorId else com.parking.stone.data.SessionManager.currentUser?.id,
+                                             operatorName = if(foundEntry!!.isPaid) foundEntry!!.operatorName else com.parking.stone.data.SessionManager.currentUser?.name
                                          )
                                          db.parkingDao().updateEntry(updated)
                                          if (com.parking.stone.data.ConfigManager.requireExitTicket) {

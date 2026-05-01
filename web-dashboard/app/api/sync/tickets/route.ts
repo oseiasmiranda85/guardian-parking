@@ -145,7 +145,13 @@ export async function GET(request: Request) {
                 tenantId: tenantId,
                 status: { in: ['OPEN', 'PAID'] }
             },
-            include: { pricingTable: true }
+            include: { 
+                pricingTable: true,
+                transactions: {
+                    take: 1,
+                    orderBy: { createdAt: 'desc' }
+                }
+            }
         })
 
         // Map to Sync format for Android
@@ -157,11 +163,12 @@ export async function GET(request: Request) {
             exitTime: t.exitTime?.getTime(),
             isPaid: t.status === 'PAID',
             amount: t.amountPaid || 0,
+            paymentMethod: t.transactions[0]?.method || null,
             operatorId: t.entryOperatorId?.toString(),
-            category: t.ticketType, // Corrected from t.category to t.ticketType
+            category: t.ticketType, 
             type: t.vehicleType,
-            billingMode: t.pricingTable?.billingMode || 'POSTPAID',
-            deviceId: t.entryEquipment, // Corrected from t.deviceId
+            billingMode: t.pricingTable?.billingMode || 'PREPAID',
+            deviceId: t.entryEquipment, 
             photoUrl: t.photoUrl
         }))
 

@@ -72,6 +72,11 @@ fun CashClosingScreen(navController: NavController) {
             operatorId = session.userId
             val opIdStr = operatorId.toString()
             
+            // Force sync to get latest data from cloud before showing report
+            try {
+                com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context)
+            } catch (e: Exception) { e.printStackTrace() }
+            
             val pStats = db.parkingDao().getPaymentStats(opIdStr, startTime, SessionManager.tenantId)
             val vStats = db.parkingDao().getVehicleStats(opIdStr, startTime, SessionManager.tenantId)
             val cStat = db.parkingDao().getCancelledStats(opIdStr, startTime, SessionManager.tenantId)
@@ -199,7 +204,7 @@ fun CashClosingScreen(navController: NavController) {
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Sessão Atual", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                    DetailRow("Operador", operatorName)
+                    DetailRow("Operador", operatorName.uppercase())
                     DetailRow("Abertura", SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(Date(startTime)))
                     DetailRow("Veículos registrados na sessão", "$entriesInSession")
                     
@@ -214,17 +219,17 @@ fun CashClosingScreen(navController: NavController) {
                     // Group and map stats for display
                     val displayStats = paymentStats.groupBy { 
                         when(it.paymentMethod?.uppercase()) {
-                            "CREDIT" -> "Crédito"
-                            "DEBIT" -> "Débito"
-                            "PIX" -> "Pix"
-                            "CASH", null -> "DINHEIRO"
+                            "CREDIT" -> "Cartão Crédito"
+                            "DEBIT" -> "Cartão Débito"
+                            "PIX" -> "PIX / Transf"
+                            "CASH", null -> "Dinheiro"
                             "ISENTO" -> "Isento"
                             "CORTESIA" -> "Cortesia"
-                            else -> it.paymentMethod ?: "DINHEIRO"
+                            else -> it.paymentMethod ?: "Dinheiro"
                         }
                     }.map { (label, stats) ->
                         label to (stats.sumOf { it.count } to stats.sumOf { it.total })
-                    }.sortedByDescending { it.first == "DINHEIRO" }
+                    }.sortedByDescending { it.first == "Dinheiro" }
 
                     displayStats.forEach { (label, data) ->
                         val (count, total) = data

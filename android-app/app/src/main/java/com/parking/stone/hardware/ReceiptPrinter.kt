@@ -195,7 +195,7 @@ class ReceiptPrinter {
         zReport.append(String.format("DATA: %s\n", timestamp))
         zReport.append(String.format("TERM: %s\n", terminalId))
         zReport.append(String.format("ID:   %s\n", sessionId.take(8)))
-        zReport.append(String.format("OPER: %s\n", operator))
+        zReport.append(String.format("OPER: %s\n", operator.uppercase()))
         zReport.append("--------------------------------\n")
         
         zReport.append("RESUMO DE PAGAMENTOS:\n")
@@ -204,9 +204,9 @@ class ReceiptPrinter {
         val groupedStats = paymentStats.groupBy { 
             when(it.paymentMethod?.uppercase()) {
                 "CASH", null -> "DINHEIRO"
-                "CREDIT" -> "CREDITO"
-                "DEBIT" -> "DEBITO"
-                "PIX" -> "PIX"
+                "CREDIT" -> "CARTAO CREDITO"
+                "DEBIT" -> "CARTAO DEBITO"
+                "PIX" -> "PIX / TRANSF"
                 "ISENTO" -> "ISENTO"
                 "CORTESIA" -> "CORTESIA"
                 else -> it.paymentMethod?.uppercase() ?: "DINHEIRO"
@@ -217,13 +217,12 @@ class ReceiptPrinter {
 
         groupedStats.forEach { (label, data) ->
             val (count, amount) = data
+            val line = String.format("%-12s %3d %8.2f", label, count, amount)
             if (label == "DINHEIRO") {
                 zReport.append("--------------------------------\n")
-                val line = String.format("%-12s %3d %8.2f", label, count, amount)
-                zReport.append("$line  <--\n")
+                zReport.append("${line.uppercase()}  <--\n")
                 zReport.append("--------------------------------\n")
             } else {
-                val line = String.format("%-12s %3d %8.2f", label, count, amount)
                 zReport.append("$line\n")
             }
         }
