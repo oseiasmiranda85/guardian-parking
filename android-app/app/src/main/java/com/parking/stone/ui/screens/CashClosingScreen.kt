@@ -209,22 +209,31 @@ fun CashClosingScreen(navController: NavController) {
                     
                     Divider(color = Color.Gray.copy(alpha=0.3f))
                     
-                    Text("Financeiro", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                    paymentStats.forEach { stat ->
-                        val isCash = stat.paymentMethod == "CASH"
-                        val label = when(stat.paymentMethod) {
+                    Text("Resumo de Faturamento", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    
+                    // Group and map stats for display
+                    val displayStats = paymentStats.groupBy { 
+                        when(it.paymentMethod?.uppercase()) {
                             "CREDIT" -> "Crédito"
                             "DEBIT" -> "Débito"
                             "PIX" -> "Pix"
-                            "CASH" -> "Dinheiro"
+                            "CASH", null -> "DINHEIRO"
                             "ISENTO" -> "Isento"
-                            else -> "Outros"
+                            "CORTESIA" -> "Cortesia"
+                            else -> it.paymentMethod ?: "DINHEIRO"
                         }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    }.map { (label, stats) ->
+                        label to (stats.sumOf { it.count } to stats.sumOf { it.total })
+                    }.sortedByDescending { it.first == "DINHEIRO" }
+
+                    displayStats.forEach { (label, data) ->
+                        val (count, total) = data
+                        val isCash = label == "DINHEIRO"
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(label, color = if (isCash) Color.White else Color.Gray, fontWeight = if (isCash) FontWeight.Bold else FontWeight.Normal)
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                Text("${stat.count} un", color = Color.Gray, fontSize = 12.sp)
-                                Text("R$ %.2f".format(stat.total), color = if (isCash) MaterialTheme.colorScheme.primary else Color.White, fontWeight = if (isCash) FontWeight.Bold else FontWeight.Normal)
+                                Text("$count un", color = Color.Gray, fontSize = 12.sp)
+                                Text("R$ %.2f".format(total), color = if (isCash) MaterialTheme.colorScheme.primary else Color.White, fontWeight = if (isCash) FontWeight.Bold else FontWeight.Normal)
                             }
                         }
                     }

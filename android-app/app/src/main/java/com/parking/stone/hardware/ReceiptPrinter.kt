@@ -199,19 +199,33 @@ class ReceiptPrinter {
         zReport.append("--------------------------------\n")
         
         zReport.append("RESUMO DE PAGAMENTOS:\n")
-        paymentStats.forEach { stat ->
-            val label = when(stat.paymentMethod?.uppercase()) {
-                "CASH" -> "DINHEIRO"
+        
+        // Grouping to ensure unique labels and complete sums
+        val groupedStats = paymentStats.groupBy { 
+            when(it.paymentMethod?.uppercase()) {
+                "CASH", null -> "DINHEIRO"
                 "CREDIT" -> "CREDITO"
                 "DEBIT" -> "DEBITO"
                 "PIX" -> "PIX"
                 "ISENTO" -> "ISENTO"
                 "CORTESIA" -> "CORTESIA"
-                null -> "DINHEIRO"
-                else -> stat.paymentMethod
+                else -> it.paymentMethod?.uppercase() ?: "DINHEIRO"
             }
-            val line = String.format("%-12s %3d %8.2f", label, stat.count, stat.total)
-            zReport.append("$line\n")
+        }.map { (label, stats) ->
+            label to (stats.sumOf { it.count } to stats.sumOf { it.total })
+        }.sortedByDescending { it.first == "DINHEIRO" }
+
+        groupedStats.forEach { (label, data) ->
+            val (count, amount) = data
+            if (label == "DINHEIRO") {
+                zReport.append("--------------------------------\n")
+                val line = String.format("%-12s %3d %8.2f", label, count, amount)
+                zReport.append("$line  <--\n")
+                zReport.append("--------------------------------\n")
+            } else {
+                val line = String.format("%-12s %3d %8.2f", label, count, amount)
+                zReport.append("$line\n")
+            }
         }
         
         if (accreditedStat.count > 0) {
@@ -244,15 +258,9 @@ class ReceiptPrinter {
         println(rawContent)
 
         // JSON for Robot
-        val paymentJsonList = paymentStats.map { stat ->
-            val label = when(stat.paymentMethod) {
-                "CASH" -> "DINHEIRO"
-                "CREDIT" -> "CREDITO"
-                "DEBIT" -> "DEBITO"
-                "PIX" -> "PIX"
-                else -> "OUTROS"
-            }
-            "{\"label\": \"$label\", \"count\": ${stat.count}, \"total\": ${stat.total}}"
+        val paymentJsonList = groupedStats.map { (label, data) ->
+            val (count, amount) = data
+            "{\"label\": \"$label\", \"count\": $count, \"total\": $amount}"
         }.toMutableList()
         
         if (accreditedStat.count > 0) paymentJsonList.add("{\"label\": \"CREDENCIADOS\", \"count\": ${accreditedStat.count}, \"total\": 0.0}")
