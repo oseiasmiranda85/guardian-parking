@@ -17,7 +17,8 @@ export async function GET(request: Request) {
                 globalAutoRelease: true,
                 globalRequireExitTicket: true,
                 defaultTicketLayout: true,
-                courtesyThreshold: true
+                courtesyThreshold: true,
+                controlHelmets: true
             }
         })
 
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
             globalRequireExitTicket, 
             defaultTicketLayout,
             courtesyThreshold,
+            controlHelmets,
             applyToAll 
         } = body
 
@@ -54,7 +56,8 @@ export async function POST(request: Request) {
                 globalAutoRelease,
                 globalRequireExitTicket,
                 defaultTicketLayout,
-                courtesyThreshold: courtesyThreshold ? parseFloat(courtesyThreshold.toString()) : undefined
+                courtesyThreshold: courtesyThreshold ? parseFloat(courtesyThreshold.toString()) : undefined,
+                controlHelmets
             }
         })
 

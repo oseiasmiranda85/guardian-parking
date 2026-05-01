@@ -272,13 +272,18 @@ fun EntryScreen(navController: NavController) {
                         }
                     }
                     
-                    if (vehicleType == "Moto") {
+                    if (vehicleType == "Moto" && com.parking.stone.data.ConfigManager.controlHelmets) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Quantidade de Capacetes", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            WizardOptionButton(text = "0", selected = helmets == 0, modifier = Modifier.weight(1f)) { helmets = 0; currentStep = EntryStep.PAYMENT }
                             WizardOptionButton(text = "1", selected = helmets == 1, modifier = Modifier.weight(1f)) { helmets = 1; currentStep = EntryStep.PAYMENT }
                             WizardOptionButton(text = "2", selected = helmets == 2, modifier = Modifier.weight(1f)) { helmets = 2; currentStep = EntryStep.PAYMENT }
+                        }
+                    } else if (vehicleType == "Moto") {
+                        // Auto-skip helmets if disabled
+                        LaunchedEffect(Unit) {
+                            helmets = 0
+                            currentStep = EntryStep.PAYMENT
                         }
                     }
                 }

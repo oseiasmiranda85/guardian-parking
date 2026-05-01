@@ -115,6 +115,7 @@ class XSync(private val dao: ParkingDao) {
                 ConfigManager.toleranceMinutes = config.toleranceMinutes
                 ConfigManager.requireEntryPhoto = config.requireEntryPhoto
                 ConfigManager.requireExitPhoto = config.requireExitPhoto
+                ConfigManager.controlHelmets = config.controlHelmets
                 ConfigManager.ticketLayout = config.ticketLayout ?: "FULL"
                 Log.d("XSync", "Config synced from Portal: release=${config.autoRelease}, tol=${config.toleranceMinutes}")
             }

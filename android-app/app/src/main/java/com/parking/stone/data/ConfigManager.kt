@@ -24,6 +24,7 @@ object ConfigManager {
         _requireEntryPhoto = prefs?.getBoolean("require_entry_photo", true) ?: true
         _requireExitPhoto = prefs?.getBoolean("require_exit_photo", false) ?: false
         _ticketLayout = prefs?.getString("ticket_layout", "FULL") ?: "FULL"
+        _controlHelmets = prefs?.getBoolean("control_helmets", true) ?: true
         _paymentTiming = PaymentTiming.valueOf(prefs?.getString("payment_timing", "EXIT") ?: "EXIT")
     }
 
@@ -89,6 +90,13 @@ object ConfigManager {
         set(value) {
             _ticketLayout = value
             prefs?.edit()?.putString("ticket_layout", value)?.apply()
+        }
+    private var _controlHelmets by mutableStateOf(true)
+    var controlHelmets: Boolean
+        get() = _controlHelmets
+        set(value) {
+            _controlHelmets = value
+            prefs?.edit()?.putBoolean("control_helmets", value)?.apply()
         }
 
     var allowPlateSearch: Boolean = true

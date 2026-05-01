@@ -20,6 +20,7 @@ data class DeviceConfig(
     val toleranceMinutes: Int,
     val requireEntryPhoto: Boolean,
     val requireExitPhoto: Boolean,
+    val controlHelmets: Boolean,
     val ticketLayout: String?
 )
 data class SyncResponse(val success: Boolean, val message: String? = null, val count: Int? = null, val config: DeviceConfig? = null)

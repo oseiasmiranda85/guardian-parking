@@ -130,7 +130,7 @@ class ReceiptPrinter {
                 val opName = SessionManager.currentUser?.name?.uppercase() ?: "SISTEMA"
                 details.append(String.format("OPERADOR: %s\n", opName))
 
-                if (type.uppercase().contains("MOTO") && helmetCount > 0) {
+                if (type.uppercase().contains("MOTO") && helmetCount > 0 && com.parking.stone.data.ConfigManager.controlHelmets) {
                     details.append(String.format("CAPACETES: %d\n", helmetCount))
                 }
                 

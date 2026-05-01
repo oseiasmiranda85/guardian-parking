@@ -24,7 +24,8 @@ export default function AttendanceSettings() {
         globalAutoRelease: false,
         globalRequireExitTicket: true,
         defaultTicketLayout: 'FULL',
-        courtesyThreshold: 5.0
+        courtesyThreshold: 5.0,
+        controlHelmets: true
     })
 
     useEffect(() => {
@@ -43,7 +44,8 @@ export default function AttendanceSettings() {
                     globalAutoRelease: data.globalAutoRelease,
                     globalRequireExitTicket: data.globalRequireExitTicket,
                     defaultTicketLayout: data.defaultTicketLayout || 'FULL',
-                    courtesyThreshold: data.courtesyThreshold || 5.0
+                    courtesyThreshold: data.courtesyThreshold || 5.0,
+                    controlHelmets: data.controlHelmets ?? true
                 })
             }
         } catch (error) {
@@ -211,6 +213,30 @@ export default function AttendanceSettings() {
                             </div>
                         </div>
                         <p className="text-[10px] text-gray-500 italic">O sistema emitirá um alerta visual no Dashboard caso este limite seja ultrapassado no dia.</p>
+                    </div>
+                </div>
+
+                {/* 5. Controle de Capacetes */}
+                <div className="bg-stone-900 border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-all">
+                    <div className="p-6 flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                                <AlertCircle className="w-6 h-6 text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold">Controle de Capacetes (Moto)</h3>
+                                <p className="text-sm text-gray-400">Habilita a seleção de 1 ou 2 capacetes no terminal quando o veículo for uma moto.</p>
+                            </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={settings.controlHelmets}
+                                onChange={(e) => setSettings({...settings, controlHelmets: e.target.checked})}
+                                className="sr-only peer" 
+                            />
+                            <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
                     </div>
                 </div>
             </div>

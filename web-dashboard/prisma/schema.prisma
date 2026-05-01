@@ -64,6 +64,7 @@ model Tenant {
   globalRequireExitTicket Boolean            @default(true)
   defaultTicketLayout  String                @default("FULL")
   courtesyThreshold    Float                 @default(5.0)
+  controlHelmets       Boolean               @default(true)
   telemetry            PerformanceTelemetry[]
 }
 
