@@ -217,7 +217,7 @@ class ReceiptPrinter {
 
         groupedStats.forEach { (label, data) ->
             val (count, amount) = data
-            val line = String.format("%-12s %3d %8.2f", label, count, amount)
+            val line = String.format("%-15s %3d %10.2f", label, count, amount)
             if (label == "DINHEIRO") {
                 zReport.append("--------------------------------\n")
                 zReport.append("${line.uppercase()}  <--\n")
@@ -228,21 +228,21 @@ class ReceiptPrinter {
         }
         
         if (accreditedStat.count > 0) {
-            zReport.append(String.format("%-12s %3d %8.2f\n", "CREDENCIADOS", accreditedStat.count, 0.0))
+            zReport.append(String.format("%-15s %3d %10.2f\n", "CREDENCIADOS", accreditedStat.count, 0.0))
         }
         if (toleranceStat.count > 0) {
-            zReport.append(String.format("%-12s %3d %8.2f\n", "TOLERANCIA", toleranceStat.count, 0.0))
+            zReport.append(String.format("%-15s %3d %10.2f\n", "TOLERANCIA", toleranceStat.count, 0.0))
         }
         
         zReport.append("--------------------------------\n")
         
         zReport.append("ESTORNOS/CANCELADOS:\n")
-        zReport.append(String.format("%-16s %3d %8.2f\n", "TOTAIS", cancelledStat.count, cancelledStat.total))
+        zReport.append(String.format("%-15s %3d %10.2f\n", "TOTAIS", cancelledStat.count, cancelledStat.total))
         zReport.append("--------------------------------\n")
 
         zReport.append("TIPO VEICULO:\n")
         vehicleStats.forEach { stat ->
-            val line = String.format("%-16s %3d %8.2f", stat.type.uppercase(), stat.count, stat.total)
+            val line = String.format("%-15s %3d %10.2f", stat.type.uppercase(), stat.count, stat.total)
             zReport.append("$line\n")
         }
         zReport.append("--------------------------------\n")
