@@ -274,7 +274,11 @@ fun EntryScreen(navController: NavController) {
             if (cameraActive && capturedBitmap == null) {
                 CameraPreview(
                     flashEnabled = flashEnabled,
-                    onPlateDetected = { /* Real-time disabled as requested */ },
+                    onPlateDetected = { plate -> 
+                        if (detectedPlate.length < 7) {
+                            detectedPlate = plate
+                        }
+                    },
                     onCaptureReady = { capture -> imageCapture = capture }
                 )
             } else if (capturedBitmap != null) {

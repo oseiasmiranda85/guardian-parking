@@ -94,7 +94,7 @@ class ReceiptPrinter {
                     val cropHeight = (originalHeight * 0.6).toInt() // Take next 60%
                     
                     val matrix = android.graphics.Matrix()
-                    matrix.postRotate(90f)
+                    matrix.postRotate(0f)
                     val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, cropY, originalWidth, cropHeight, matrix, true)
                     
                     val targetWidth = 384
@@ -200,12 +200,15 @@ class ReceiptPrinter {
         
         zReport.append("RESUMO DE PAGAMENTOS:\n")
         paymentStats.forEach { stat ->
-            val label = when(stat.paymentMethod) {
+            val label = when(stat.paymentMethod?.uppercase()) {
                 "CASH" -> "DINHEIRO"
                 "CREDIT" -> "CREDITO"
                 "DEBIT" -> "DEBITO"
                 "PIX" -> "PIX"
-                else -> "OUTROS"
+                "ISENTO" -> "ISENTO"
+                "CORTESIA" -> "CORTESIA"
+                null -> "DINHEIRO"
+                else -> stat.paymentMethod
             }
             val line = String.format("%-12s %3d %8.2f", label, stat.count, stat.total)
             zReport.append("$line\n")

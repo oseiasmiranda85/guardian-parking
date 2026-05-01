@@ -28,9 +28,36 @@ class HybridAnalyzer(
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
         val startTime = System.currentTimeMillis()
+        
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+            // Optimization: Convert to Bitmap and Pre-process
+            val bitmap = imageProxyToBitmap(imageProxy)
+            if (bitmap == null) {
+                imageProxy.close()
+                return
+            }
+
+            // Crop to center (ROI - Region of Interest)
+            val originalWidth = bitmap.width
+            val originalHeight = bitmap.height
+            val cropWidth = (originalWidth * 0.8).toInt()
+            val cropHeight = (originalHeight * 0.4).toInt()
+            val cropX = (originalWidth - cropWidth) / 2
+            val cropY = (originalHeight - cropHeight) / 2
+            
+            val croppedBitmap = android.graphics.Bitmap.createBitmap(bitmap, cropX, cropY, cropWidth, cropHeight)
+            
+            // Scale down for faster OCR
+            val scale = 0.6f
+            val scaledBitmap = android.graphics.Bitmap.createScaledBitmap(
+                croppedBitmap, 
+                (cropWidth * scale).toInt(), 
+                (cropHeight * scale).toInt(), 
+                false
+            )
+
+            val image = InputImage.fromBitmap(scaledBitmap, 0)
 
             barcodeScanner.process(image)
                 .addOnSuccessListener { barcodes ->
@@ -64,6 +91,14 @@ class HybridAnalyzer(
         } else {
             imageProxy.close()
         }
+    }
+
+    private fun imageProxyToBitmap(image: ImageProxy): android.graphics.Bitmap? {
+        val plane = image.planes[0]
+        val buffer = plane.buffer
+        val bytes = ByteArray(buffer.remaining())
+        buffer.get(bytes)
+        return android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     }
 
     private fun processText(text: Text, onPlateFound: () -> Unit) {
