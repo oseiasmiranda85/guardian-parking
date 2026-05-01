@@ -176,7 +176,8 @@ export default function UsersPage() {
     }
 
     // Show hidden users ONLY if current user is Master
-    const visibleUsers = (users || []).filter((u: any) => !u.hidden || (currentUser?.role === 'MASTER'))
+    const userRole = currentUser?.user?.role || currentUser?.role
+    const visibleUsers = (users || []).filter((u: any) => !u.hidden || (userRole === 'MASTER'))
 
     // Password Change Logic
     const [passwordModalOpen, setPasswordModalOpen] = useState(false)

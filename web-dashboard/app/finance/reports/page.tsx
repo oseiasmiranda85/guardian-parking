@@ -58,7 +58,8 @@ function CashReportsContent() {
 
     // Handle Closing Session (Manager Only)
     const handleCloseSession = async (id: string) => {
-        if (currentUser?.role !== 'MANAGER' && currentUser?.role !== 'MASTER') {
+        const role = currentUser?.user?.role || currentUser?.role
+        if (role !== 'MANAGER' && role !== 'MASTER') {
             alert('Apenas Gerentes ou Master podem realizar o fechamento de caixa pelo sistema Web.')
             return
         }
@@ -249,8 +250,8 @@ function CashReportsContent() {
                                         {session.status === 'OPEN' && (
                                             <button
                                                 onClick={() => handleCloseSession(session.id)}
-                                                className={`p-2 rounded-lg transition border border-white/10 ${currentUser?.role === 'MANAGER' || currentUser?.role === 'MASTER' ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'opacity-30 cursor-not-allowed'}`}
-                                                title={currentUser?.role === 'MANAGER' || currentUser?.role === 'MASTER' ? "Fechar Caixa" : "Apenas Gerentes podem fechar caixa"}
+                                                className={`p-2 rounded-lg transition border border-white/10 ${(currentUser?.user?.role === 'MANAGER' || currentUser?.user?.role === 'MASTER' || currentUser?.role === 'MANAGER' || currentUser?.role === 'MASTER') ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'opacity-30 cursor-not-allowed'}`}
+                                                title={(currentUser?.user?.role === 'MANAGER' || currentUser?.user?.role === 'MASTER' || currentUser?.role === 'MANAGER' || currentUser?.role === 'MASTER') ? "Fechar Caixa" : "Apenas Gerentes podem fechar caixa"}
                                             >
                                                 <Lock className="w-5 h-5" />
                                             </button>
