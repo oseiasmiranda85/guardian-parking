@@ -5,6 +5,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -78,6 +79,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
     var flashEnabled by remember { mutableStateOf(false) }
     var cameraActive by remember { mutableStateOf(true) }
     var lastInteraction by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     
     // Inactivity Timeout (1 minute)
     LaunchedEffect(lastInteraction) {
@@ -92,6 +94,33 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
 
     // Recent Entries List
     var recentEntries by remember { mutableStateOf<List<ParkingEntry>>(emptyList()) }
+
+    fun processManualResult(plate: String) {
+        resetInactivity()
+        if (foundEntry == null) {
+            scope.launch {
+                val tenantId = SessionManager.tenantId
+                val isNumeric = plate.all { it.isDigit() }
+                val entry = if (isNumeric) {
+                    db.parkingDao().getEntryById(plate.toLongOrNull() ?: -1).let { if(it?.tenantId == tenantId && it.exitTime == null) it else null }
+                } else {
+                    db.parkingDao().getActiveEntryByPlate(plate, tenantId)
+                }
+
+                if (entry != null) {
+                    val now = System.currentTimeMillis()
+                    val calculation = com.parking.stone.data.PricingManager.calculate(entry, now)
+                    calculatedFee = calculation.first
+                    isRefundVoucher = calculation.second
+                    durationString = calculation.third
+                    foundEntry = entry
+                }
+                isProcessing = false
+            }
+        } else {
+            isProcessing = false
+        }
+    }
 
     // Trigger search if initialPlate is provided
     LaunchedEffect(initialPlate) {
@@ -115,49 +144,8 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                 if (cameraActive) {
                     CameraPreview(
                         flashEnabled = flashEnabled,
-                        onPlateDetected = { plate -> 
-                            resetInactivity()
-                            if (foundEntry == null) {
-                                scope.launch {
-                                    val tenantId = SessionManager.tenantId
-                                    val isNumeric = plate.all { it.isDigit() }
-                                    val entry = if (isNumeric) {
-                                        db.parkingDao().getEntryById(plate.toLongOrNull() ?: -1).let { if(it?.tenantId == tenantId && it.exitTime == null) it else null }
-                                    } else {
-                                        db.parkingDao().getActiveEntryByPlate(plate, tenantId)
-                                    }
-
-                                    if (entry != null) {
-                                        val now = System.currentTimeMillis()
-                                        val calculation = com.parking.stone.data.PricingManager.calculate(entry, now)
-                                        calculatedFee = calculation.first
-                                        isRefundVoucher = calculation.second
-                                        durationString = calculation.third
-                                        
-                                        // Conditional Auto-Release
-                                        if (entry.isPaid && com.parking.stone.data.ConfigManager.autoRelease) {
-                                            val updated = entry.copy(
-                                                exitTime = System.currentTimeMillis(),
-                                                isSynced = false,
-                                                exitDeviceId = com.parking.stone.data.DeviceManager.deviceId
-                                            )
-                                            db.parkingDao().updateEntry(updated)
-                                            if (com.parking.stone.data.ConfigManager.requireExitTicket) {
-                                                com.parking.stone.hardware.ReceiptPrinter().printEntryTicket("SAIDA", updated.plate, updated.type, "R$ %.2f".format(updated.amount), updated.paymentMethod ?: "PAGO", "DONE", updated.photoPath)
-                                            }
-                                            
-                                            withContext(kotlinx.coroutines.Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
-                                            recentEntries = db.parkingDao().getActiveEntries(com.parking.stone.data.SessionManager.tenantId)
-                                            android.widget.Toast.makeText(context, "SAÍDA AUTOMÁTICA: ${entry.plate}", android.widget.Toast.LENGTH_LONG).show()
-                                            return@launch
-                                        }
-
-                                        // Fees and Refund logic are now calculated above via PricingManager.calculate
-                                    }
-                                }
-                            }
-                        },
-                        onCaptureReady = {}
+                        onPlateDetected = { /* Real-time disabled per user preference */ },
+                        onCaptureReady = { capture -> imageCapture = capture }
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray), contentAlignment = Alignment.Center) {
@@ -169,6 +157,94 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                     }
                 }
                 
+                // Manual Capture Button
+                if (cameraActive && imageCapture != null) {
+                    IconButton(
+                        onClick = {
+                            resetInactivity()
+                            isProcessing = true
+                            imageCapture!!.takePicture(
+                                Executors.newSingleThreadExecutor(),
+                                object : androidx.camera.core.ImageCapture.OnImageCapturedCallback() {
+                                    override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
+                                        val buffer = image.planes[0].buffer
+                                        val bytes = ByteArray(buffer.remaining())
+                                        buffer.get(bytes)
+                                        val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                        
+                                        // Fix rotation
+                                        val matrix = android.graphics.Matrix()
+                                        matrix.postRotate(image.imageInfo.rotationDegrees.toFloat())
+                                        val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                                        
+                                        // ROI and Scaling
+                                        val originalWidth = rotatedBitmap.width
+                                        val originalHeight = rotatedBitmap.height
+                                        val cropWidth = (originalWidth * 0.8).toInt()
+                                        val cropHeight = (originalHeight * 0.4).toInt()
+                                        val cropX = (originalWidth - cropWidth) / 2
+                                        val cropY = (originalHeight - cropHeight) / 2
+                                        val croppedBitmap = android.graphics.Bitmap.createBitmap(rotatedBitmap, cropX, cropY, cropWidth, cropHeight)
+                                        val scale = 0.6f
+                                        val ocrBitmap = android.graphics.Bitmap.createScaledBitmap(croppedBitmap, (cropWidth * scale).toInt(), (cropHeight * scale).toInt(), false)
+                                        
+                                        image.close()
+
+                                        scope.launch {
+                                            val visionImage = com.google.mlkit.vision.common.InputImage.fromBitmap(ocrBitmap, 0)
+                                            val recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(com.google.mlkit.vision.text.latin.TextRecognizerOptions.DEFAULT_OPTIONS)
+                                            val barcodeScanner = com.google.mlkit.vision.barcode.BarcodeScanning.getClient()
+
+                                            // Try Barcode first
+                                            barcodeScanner.process(visionImage)
+                                                .addOnSuccessListener { barcodes ->
+                                                    if (barcodes.isNotEmpty()) {
+                                                        val plate = barcodes[0].rawValue ?: ""
+                                                        processManualResult(plate)
+                                                    } else {
+                                                        // Fallback to OCR
+                                                        recognizer.process(visionImage)
+                                                            .addOnSuccessListener { visionText ->
+                                                                val platePattern = Regex("[A-Z]{3}[0-9][A-Z0-9][0-9]{2}")
+                                                                val oldPattern = Regex("[A-Z]{3}[0-9]{4}")
+                                                                var found = false
+                                                                visionText.textBlocks.forEach { block ->
+                                                                    block.lines.forEach { line ->
+                                                                        val text = line.text.uppercase().replace("-", "").replace(" ", "")
+                                                                        if (platePattern.find(text) != null || oldPattern.find(text) != null) {
+                                                                            processManualResult(text.take(7))
+                                                                            found = true
+                                                                        }
+                                                                    }
+                                                                }
+                                                                if (!found) isProcessing = false
+                                                            }
+                                                            .addOnFailureListener { isProcessing = false }
+                                                    }
+                                                }
+                                                .addOnFailureListener { isProcessing = false }
+                                        }
+                                    }
+                                    override fun onError(exc: androidx.camera.core.ImageCaptureException) {
+                                        isProcessing = false
+                                    }
+                                }
+                            )
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 80.dp)
+                            .size(64.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    ) {
+                        if (isProcessing) {
+                            CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                        } else {
+                            Icon(Icons.Default.CameraAlt, contentDescription = "Capturar", tint = Color.Black)
+                        }
+                    }
+                }
+
                 // Flash Toggle
                 FloatingActionButton(
                     onClick = { flashEnabled = !flashEnabled; resetInactivity() },
@@ -187,7 +263,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                     Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(Color.Red).align(Alignment.Center))
                 }
                 Text(
-                    "Aponte para o QR Ticket ou Placa", 
+                    "Aponte e capture o QR ou Placa", 
                     modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,

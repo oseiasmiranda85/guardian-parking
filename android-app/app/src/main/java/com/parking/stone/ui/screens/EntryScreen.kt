@@ -274,11 +274,7 @@ fun EntryScreen(navController: NavController) {
             if (cameraActive && capturedBitmap == null) {
                 CameraPreview(
                     flashEnabled = flashEnabled,
-                    onPlateDetected = { plate -> 
-                        if (detectedPlate.length < 7) {
-                            detectedPlate = plate
-                        }
-                    },
+                    onPlateDetected = { /* Real-time disabled by user preference to reduce errors */ },
                     onCaptureReady = { capture -> imageCapture = capture }
                 )
             } else if (capturedBitmap != null) {
@@ -416,12 +412,23 @@ fun EntryScreen(navController: NavController) {
                                          matrix.postRotate(image.imageInfo.rotationDegrees.toFloat())
                                          val rotatedBitmap = android.graphics.Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
                                          
-                                         // Optimize for OCR: Scale down before processing
-                                         val scale = 0.5f
+                                         // Optimize for OCR: Crop and Scale
+                                         val originalWidth = rotatedBitmap.width
+                                         val originalHeight = rotatedBitmap.height
+                                         
+                                         // ROI: Focus on the center area where the plate is usually positioned
+                                         val cropWidth = (originalWidth * 0.8).toInt()
+                                         val cropHeight = (originalHeight * 0.4).toInt()
+                                         val cropX = (originalWidth - cropWidth) / 2
+                                         val cropY = (originalHeight - cropHeight) / 2
+                                         
+                                         val croppedBitmap = android.graphics.Bitmap.createBitmap(rotatedBitmap, cropX, cropY, cropWidth, cropHeight)
+                                         
+                                         val scale = 0.6f
                                          val ocrBitmap = android.graphics.Bitmap.createScaledBitmap(
-                                             rotatedBitmap, 
-                                             (rotatedBitmap.width * scale).toInt(), 
-                                             (rotatedBitmap.height * scale).toInt(), 
+                                             croppedBitmap, 
+                                             (cropWidth * scale).toInt(), 
+                                             (cropHeight * scale).toInt(), 
                                              false
                                          )
                                          
