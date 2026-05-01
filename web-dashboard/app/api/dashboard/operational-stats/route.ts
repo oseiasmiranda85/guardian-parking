@@ -135,6 +135,15 @@ export async function GET(request: Request) {
         const courtesyTickets = ticketsDetails.filter(t => t.ticketType === 'CORTESIA')
         const accreditedTickets = ticketsDetails.filter(t => t.ticketType === 'ACCREDITED' || t.ticketType === 'CREDENCIADO')
         
+        // 7.1 Cancelled Stats
+        const cancelledTickets = await prisma.ticket.count({
+            where: {
+                tenantId: tenantIdsQuery,
+                status: 'CANCELLED',
+                updatedAt: { gte: filterStart, lte: filterEnd }
+            }
+        })
+        
         // Fetch representative price for renounced revenue calculation
         // We'll take the first hour price from the main active pricing table
         const activePricing = await prisma.pricingTable.findFirst({
@@ -192,6 +201,7 @@ export async function GET(request: Request) {
                 hourlyDistribution,
                 courtesyCount: courtesyTickets.length,
                 accreditedCount: accreditedTickets.length,
+                cancelledCount: cancelledTickets,
                 courtesyPercentage: entriesRange > 0 ? (courtesyTickets.length / entriesRange) * 100 : 0,
                 courtesyThreshold
             },

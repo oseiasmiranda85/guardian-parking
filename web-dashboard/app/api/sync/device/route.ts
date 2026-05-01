@@ -47,6 +47,12 @@ export async function POST(request: Request) {
             })
         }
 
+        // Get Tenant global config as fallback or primary for some fields
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tid },
+            select: { controlHelmets: true }
+        })
+
         return NextResponse.json({ 
             success: true,
             config: {
@@ -56,7 +62,8 @@ export async function POST(request: Request) {
                 toleranceMinutes: device.toleranceMinutes,
                 requireEntryPhoto: device.requireEntryPhoto,
                 requireExitPhoto: device.requireExitPhoto,
-                ticketLayout: device.ticketLayout
+                ticketLayout: device.ticketLayout,
+                controlHelmets: tenant?.controlHelmets ?? true
             }
         })
 

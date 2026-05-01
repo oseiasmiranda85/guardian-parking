@@ -73,7 +73,7 @@ interface ParkingDao {
     @Query("SELECT type, COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND isPaid = 1 AND isCancelled = 0 AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) ) GROUP BY type")
     suspend fun getVehicleStats(operatorId: String, startTime: Long, tenantId: Int): List<VehicleStat>
 
-    @Query("SELECT COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE LOWER(operatorId) = LOWER(:operatorId) AND isCancelled = 1 AND tenantId = :tenantId AND ( (billingMode = 'PREPAID' AND entryTime >= :startTime) OR (billingMode = 'POSTPAID' AND exitTime >= :startTime) )")
+    @Query("SELECT COUNT(*) as count, SUM(amount) as total FROM parking_entries WHERE (LOWER(operatorId) = LOWER(:operatorId) OR LOWER(cancelledByOperatorId) = LOWER(:operatorId)) AND isCancelled = 1 AND tenantId = :tenantId AND cancelledTime >= :startTime")
     suspend fun getCancelledStats(operatorId: String, startTime: Long, tenantId: Int): CancelledStat
 
     @Query("SELECT COUNT(*) FROM parking_entries WHERE exitTime IS NULL AND tenantId = :tenantId AND isCancelled = 0")
@@ -127,7 +127,7 @@ interface CashDao {
     suspend fun closeSession(sessionId: String, endTime: Long, closingBalance: Double, totalRevenue: Double): Int
 }
 
-@Database(entities = [ParkingEntry::class, CashSession::class, CashTransaction::class, Telemetry::class], version = 13, exportSchema = false)
+@Database(entities = [ParkingEntry::class, CashSession::class, CashTransaction::class, Telemetry::class], version = 14, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun parkingDao(): ParkingDao
     abstract fun cashDao(): CashDao

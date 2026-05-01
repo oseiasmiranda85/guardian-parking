@@ -278,7 +278,7 @@ export default function AttendanceSettings() {
                     <div className="space-y-2 text-center md:text-left">
                         <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium border border-green-500/20">
                             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                            Versão Atual: v2.1.1
+                            Versão Atual: v2.1.2
                         </div>
                         <h2 className="text-2xl font-bold">Central de Atualização (APK)</h2>
                         <p className="text-gray-400 max-w-md">Instale a versão mais recente nos terminais POS para ativar o multi-login e a emissão de cortesia por supervisores.</p>

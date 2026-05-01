@@ -5,9 +5,9 @@ import { Download, Smartphone, ShieldCheck, Zap, RefreshCcw } from 'lucide-react
 import Link from 'next/link'
 
 export default function DownloadsPage() {
-    const currentVersion = "2.1.1"
-    const releaseDate = "01 de Maio, 2026 (00:38)"
-    const apkUrl = "/downloads/guardian-v2.1.1.apk"
+    const currentVersion = "2.1.2"
+    const releaseDate = "01 de Maio, 2026 (01:10)"
+    const apkUrl = "/downloads/guardian-v2.1.2.apk"
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -94,11 +94,11 @@ export default function DownloadsPage() {
                     <h3 className="text-center text-sm font-black text-gray-500 uppercase tracking-widest">O que há de novo na v{currentVersion}</h3>
                     <ul className="space-y-4">
                         {[
-                            "Sincronismo Manual Progressivo: Novo botão no menu com indicador de itens pendentes e modal de progresso",
-                            "Otimização de Armazenamento: Fotos redimensionadas para 1024px e apagadas do terminal após upload garantido",
-                            "Controle de Capacetes Dinâmico: Seleção de 1/2 capacetes aparece apenas se habilitado no portal",
-                            "Bloqueio de Logout de Segurança: Sistema impede a saída se houver fotos ou tickets pendentes de sincronismo",
-                            "Melhoria em Saídas Compartilhadas: Busca automática de fotos na nuvem caso não existam no terminal local"
+                            "Lógica de Cortesia: Valor R$ 0,00 fixo para evitar erros financeiros no fechamento",
+                            "Reconciliação de Estornos: Tickets cancelados aparecem corretamente no relatório da sessão",
+                            "Correção Capacetes: Botões de seleção 1 e 2 restaurados e fluxo de Wizard otimizado",
+                            "Sincronismo de Configuração: Flags do portal (como controle de capacetes) aplicadas instantaneamente",
+                            "Estabilidade: Atualização do esquema do banco de dados local (v14) para melhor auditoria"
                         ].map((note, i) => (
                             <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>

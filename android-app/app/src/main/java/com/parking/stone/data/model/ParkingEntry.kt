@@ -22,6 +22,8 @@ data class ParkingEntry(
     val photoPath: String? = null,
     val isCancelled: Boolean = false,
     val cancellationReason: String? = null,
+    val cancelledTime: Long? = null,
+    val cancelledByOperatorId: String? = null,
     val tenantId: Int = -1, // Multi-Tenant ID
     val operatorId: String? = null,
     val billingMode: String = "PREPAID", // PREPAID or POSTPAID

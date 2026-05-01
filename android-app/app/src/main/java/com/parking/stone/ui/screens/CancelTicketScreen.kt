@@ -154,7 +154,13 @@ fun CancelTicketScreen(navController: NavController) {
                 onClick = {
                     if (reason.length > 5) {
                         scope.launch {
-                            val updated = foundEntry!!.copy(isCancelled = true, cancellationReason = reason)
+                            val updated = foundEntry!!.copy(
+                                isCancelled = true, 
+                                cancellationReason = reason,
+                                cancelledTime = System.currentTimeMillis(),
+                                cancelledByOperatorId = com.parking.stone.data.SessionManager.currentUser?.id ?: foundEntry!!.operatorId,
+                                isSynced = false
+                            )
                             db.parkingDao().updateEntry(updated)
                             
                             val printer = com.parking.stone.hardware.ReceiptPrinter()

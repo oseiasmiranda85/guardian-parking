@@ -268,7 +268,12 @@ fun EntryScreen(navController: NavController) {
                         }
                         WizardOptionButton(text = "MOTO", selected = vehicleType == "Moto", modifier = Modifier.weight(1f)) {
                             vehicleType = "Moto"
-                            currentStep = EntryStep.VEHICLE // Keep here to select helmets
+                            if (com.parking.stone.data.ConfigManager.controlHelmets) {
+                                currentStep = EntryStep.VEHICLE
+                            } else {
+                                helmets = 0
+                                currentStep = EntryStep.PAYMENT
+                            }
                         }
                     }
                     
@@ -278,12 +283,6 @@ fun EntryScreen(navController: NavController) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             WizardOptionButton(text = "1", selected = helmets == 1, modifier = Modifier.weight(1f)) { helmets = 1; currentStep = EntryStep.PAYMENT }
                             WizardOptionButton(text = "2", selected = helmets == 2, modifier = Modifier.weight(1f)) { helmets = 2; currentStep = EntryStep.PAYMENT }
-                        }
-                    } else if (vehicleType == "Moto") {
-                        // Auto-skip helmets if disabled
-                        LaunchedEffect(Unit) {
-                            helmets = 0
-                            currentStep = EntryStep.PAYMENT
                         }
                     }
                 }
@@ -512,13 +511,15 @@ private fun executeSave(
     onSuccess: () -> Unit,
     onProcessing: (Boolean) -> Unit
 ) {
+    val finalAmount = if (method == "CORTESIA") 0.0 else com.parking.stone.data.PricingManager.calculateAtEntry(type)
+    
     saveEntryWithPhoto(
         context = context,
         scope = scope,
         plate = plate,
         type = type,
         helmetsCount = helmets,
-        amount = com.parking.stone.data.PricingManager.calculateAtEntry(type),
+        amount = finalAmount,
         isPaid = true,
         method = method,
         billing = "PREPAID",

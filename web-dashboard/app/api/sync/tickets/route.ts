@@ -91,15 +91,18 @@ export async function POST(request: Request) {
             }
 
             // Create or Void Transaction for Cash Flow
+            const isCourtesy = t.paymentMethod === 'CORTESIA' || t.category === 'CORTESIA';
+            const actualAmount = isCourtesy ? 0 : (t.amount || 0);
+
             if (t.status === 'CANCELLED' || t.status === 'REFUNDED') {
                 // DELETE any transaction for this ticket if it was cancelled
                 await prisma.transaction.deleteMany({
                     where: { ticketId: ticketId }
                 })
-            } else if (t.isPaid && (t.amount || 0) > 0) {
+            } else if (t.isPaid && actualAmount > 0) {
                 // Check if transaction already exists for this ticket
                 const existingTx = await prisma.transaction.findFirst({
-                    where: { ticketId: ticketId, amount: t.amount }
+                    where: { ticketId: ticketId, amount: actualAmount }
                 })
 
                 if (!existingTx) {
@@ -107,15 +110,15 @@ export async function POST(request: Request) {
                         data: {
                             tenantId: tenantId,
                             ticketId: ticketId,
-                            amount: t.amount,
+                            amount: actualAmount,
                             method: t.paymentMethod || 'CASH',
                             operatorId: t.operatorId ? parseInt(t.operatorId.toString()) : undefined,
                             createdAt: new Date()
                         }
                     })
                 }
-            } else if (!t.isPaid && t.exitTime && (t.amount === 0 || t.amount === null)) {
-                // VOID transactions for this ticket (Refund/Tolerance case)
+            } else if (isCourtesy || (!t.isPaid && t.exitTime && actualAmount === 0)) {
+                // VOID transactions for this ticket (Courtesy/Refund/Tolerance case)
                 await prisma.transaction.deleteMany({
                     where: { ticketId: ticketId }
                 })

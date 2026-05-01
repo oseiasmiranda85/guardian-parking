@@ -243,6 +243,9 @@ class XSync(private val dao: ParkingDao) {
             }
             
             Log.d("XSync", "Config synced: CAR=${carPricing?.name}, MOTO=${motoPricing?.name}")
+            
+            // Also sync device-specific / global flags
+            syncDevice()
         } catch (e: Exception) {
             Log.e("XSync", "Config sync failed", e)
         }
