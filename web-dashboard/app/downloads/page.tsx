@@ -5,9 +5,9 @@ import { Download, Smartphone, ShieldCheck, Zap, RefreshCcw } from 'lucide-react
 import Link from 'next/link'
 
 export default function DownloadsPage() {
-    const currentVersion = "2.0.8"
-    const releaseDate = "01 de Maio, 2026"
-    const apkUrl = "/downloads/guardian-v2.0.8.apk"
+    const currentVersion = "2.1.1"
+    const releaseDate = "01 de Maio, 2026 (00:38)"
+    const apkUrl = "/downloads/guardian-v2.1.1.apk"
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -94,11 +94,11 @@ export default function DownloadsPage() {
                     <h3 className="text-center text-sm font-black text-gray-500 uppercase tracking-widest">O que há de novo na v{currentVersion}</h3>
                     <ul className="space-y-4">
                         {[
-                            "Confiabilidade Financeira Total: Sincronismo inteligente que preserva métodos de pagamento e valores",
-                            "Sincronização Forçada no Caixa: O app busca os dados da nuvem antes de exibir o fechamento",
-                            "Padronização com o Portal: Nomes de pagamentos (PIX, Cartão Crédito) agora são idênticos ao dashboard",
-                            "Correção de Mapeamento: Fim do erro que transformava cartões em 'Dinheiro' no relatório impresso",
-                            "Destaque Visual Premium: Relatório Z com DINHEIRO em negrito e nomes de operadores em MAIÚSCULO"
+                            "Sincronismo Manual Progressivo: Novo botão no menu com indicador de itens pendentes e modal de progresso",
+                            "Otimização de Armazenamento: Fotos redimensionadas para 1024px e apagadas do terminal após upload garantido",
+                            "Controle de Capacetes Dinâmico: Seleção de 1/2 capacetes aparece apenas se habilitado no portal",
+                            "Bloqueio de Logout de Segurança: Sistema impede a saída se houver fotos ou tickets pendentes de sincronismo",
+                            "Melhoria em Saídas Compartilhadas: Busca automática de fotos na nuvem caso não existam no terminal local"
                         ].map((note, i) => (
                             <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>
