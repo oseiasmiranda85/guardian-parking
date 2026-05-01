@@ -95,9 +95,11 @@ fun EntryScreen(navController: NavController) {
         }
     }
 
-    // --- DUPLICATE CHECK ---
     var showDuplicateDialog by remember { mutableStateOf(false) }
     var existingTicketId by remember { mutableStateOf<Long?>(null) }
+    
+    // Performance Tracking
+    var processStartTime by remember { mutableLongStateOf(0L) }
     
     // Auto-detect Plate Pattern
     LaunchedEffect(detectedPlate) {
@@ -530,6 +532,7 @@ fun EntryScreen(navController: NavController) {
                     }
                     if (detectedPlate.isNotEmpty() && !isProcessing) {
                         isProcessing = true
+                        processStartTime = System.currentTimeMillis()
                         val currentAmount = if (isPrePaid) com.parking.stone.data.PricingManager.calculateAtEntry(vehicleType) else 0.0
                         saveEntryWithPhoto(
                             context = context,
@@ -544,7 +547,15 @@ fun EntryScreen(navController: NavController) {
                             category = "ROTATIVO",
                             imageCapture = imageCapture,
                             bitmap = capturedBitmap,
-                            onSuccess = { showSuccessDialog = true },
+                            onSuccess = { 
+                                val totalTime = (System.currentTimeMillis() - processStartTime).toInt()
+                                com.parking.stone.data.TelemetryManager.logEvent(
+                                    context = context,
+                                    eventType = "ENTRY_TOTAL",
+                                    totalProcessTime = totalTime
+                                )
+                                showSuccessDialog = true 
+                            },
                             onFinish = { isProcessing = false }
                         )
                     }
@@ -692,24 +703,38 @@ private fun saveEntryWithPhoto(
     }
 
     if (bitmap != null) {
+        val captureStartTime = System.currentTimeMillis()
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val out = java.io.FileOutputStream(photoFile)
                 bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out)
                 out.flush()
                 out.close()
+                val captureTime = (System.currentTimeMillis() - captureStartTime).toInt()
+                com.parking.stone.data.TelemetryManager.logEvent(
+                    context = context,
+                    eventType = "CAPTURE",
+                    captureTime = captureTime
+                )
                 saveAndPrint(photoFile.absolutePath)
             } catch(e: Exception) {
                 saveAndPrint(null)
             }
         }
     } else if (imageCapture != null) {
+        val captureStartTime = System.currentTimeMillis()
         val outputOptions = androidx.camera.core.ImageCapture.OutputFileOptions.Builder(photoFile).build()
         imageCapture.takePicture(
             outputOptions,
             androidx.core.content.ContextCompat.getMainExecutor(context),
             object : androidx.camera.core.ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: androidx.camera.core.ImageCapture.OutputFileResults) {
+                    val captureTime = (System.currentTimeMillis() - captureStartTime).toInt()
+                    com.parking.stone.data.TelemetryManager.logEvent(
+                        context = context,
+                        eventType = "CAPTURE",
+                        captureTime = captureTime
+                    )
                     saveAndPrint(photoFile.absolutePath)
                 }
                 override fun onError(exc: androidx.camera.core.ImageCaptureException) {

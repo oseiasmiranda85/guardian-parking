@@ -92,7 +92,7 @@ fun CameraPreview(
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build()
                         .also {
-                            it.setAnalyzer(cameraExecutor, HybridAnalyzer(onPlateDetected))
+                            it.setAnalyzer(cameraExecutor, HybridAnalyzer(context, onPlateDetected))
                         }
 
                     try {

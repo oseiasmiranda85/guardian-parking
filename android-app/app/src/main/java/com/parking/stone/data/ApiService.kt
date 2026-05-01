@@ -71,6 +71,16 @@ data class SessionSync(
     val totalRevenue: Double
 )
 
+data class TelemetrySync(
+    val deviceId: String,
+    val eventType: String,
+    val ocrTimeMs: Int? = null,
+    val captureTimeMs: Int? = null,
+    val totalProcessTimeMs: Int? = null,
+    val apiLatencyMs: Int? = null,
+    val timestamp: Long
+)
+
 data class AuthorizePinResponse(
     val success: Boolean,
     val user: UserData
@@ -115,4 +125,6 @@ interface ApiService {
         @Query("active") active: Boolean,
         @Query("vehicleType") vehicleType: String? = null
     ): PricingTable?
+    @POST("api/sync/telemetry")
+    suspend fun syncTelemetry(@Header("Authorization") token: String, @Header("x-tenant-id") tenantId: String, @Body events: List<TelemetrySync>): SyncResponse
 }

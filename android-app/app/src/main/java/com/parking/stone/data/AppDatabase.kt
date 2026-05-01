@@ -10,6 +10,22 @@ import androidx.room.RoomDatabase
 import com.parking.stone.data.model.ParkingEntry
 import com.parking.stone.data.model.CashSession
 import com.parking.stone.data.model.CashTransaction
+import com.parking.stone.data.model.Telemetry
+
+@Dao
+interface TelemetryDao {
+    @Insert
+    suspend fun insert(telemetry: Telemetry)
+
+    @Query("SELECT * FROM telemetry WHERE synced = 0")
+    suspend fun getUnsynced(): List<Telemetry>
+
+    @Query("UPDATE telemetry SET synced = 1 WHERE id IN (:ids)")
+    suspend fun markAsSynced(ids: List<Long>)
+    
+    @Query("DELETE FROM telemetry WHERE synced = 1")
+    suspend fun clearSynced()
+}
 
 @Dao
 interface ParkingDao {
@@ -101,10 +117,11 @@ interface CashDao {
     suspend fun closeSession(sessionId: String, endTime: Long, closingBalance: Double, totalRevenue: Double): Int
 }
 
-@Database(entities = [ParkingEntry::class, CashSession::class, CashTransaction::class], version = 12, exportSchema = false)
+@Database(entities = [ParkingEntry::class, CashSession::class, CashTransaction::class, Telemetry::class], version = 13, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun parkingDao(): ParkingDao
     abstract fun cashDao(): CashDao
+    abstract fun telemetryDao(): TelemetryDao
     
     companion object {
         @Volatile private var instance: AppDatabase? = null

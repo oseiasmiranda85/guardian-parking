@@ -1,6 +1,7 @@
 package com.parking.stone.hardware
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -10,8 +11,10 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.parking.stone.data.TelemetryManager
 
 class HybridAnalyzer(
+    private val context: Context,
     private val onResultFound: (String) -> Unit
 ) : ImageAnalysis.Analyzer {
 
@@ -24,11 +27,11 @@ class HybridAnalyzer(
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
+        val startTime = System.currentTimeMillis()
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
-            // Step 1: Scan Barcodes (Priority)
             barcodeScanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     if (barcodes.isNotEmpty()) {
@@ -40,10 +43,16 @@ class HybridAnalyzer(
                         }
                     }
                     
-                    // Step 2: Scan Text if no barcode found
                     textRecognizer.process(image)
                         .addOnSuccessListener { visionText ->
-                            processText(visionText)
+                            val processTime = (System.currentTimeMillis() - startTime).toInt()
+                            processText(visionText) {
+                                TelemetryManager.logEvent(
+                                    context = context,
+                                    eventType = "OCR_FRAME",
+                                    ocrTime = processTime
+                                )
+                            }
                         }
                         .addOnCompleteListener {
                             imageProxy.close()
@@ -57,21 +66,21 @@ class HybridAnalyzer(
         }
     }
 
-    private fun processText(text: Text) {
-        // Try block by block first (concatenating lines for 2-line plates)
+    private fun processText(text: Text, onPlateFound: () -> Unit) {
         for (block in text.textBlocks) {
             val blockText = block.lines.joinToString("") { it.text }
             val foundPlate = extractPlate(blockText)
             if (foundPlate != null) {
+                onPlateFound()
                 onResultFound(foundPlate)
                 return
             }
         }
         
-        // Fallback: search in the entire recognized text
         val fullText = text.text.replace("\n", "")
         val foundFull = extractPlate(fullText)
         if (foundFull != null) {
+            onPlateFound()
             onResultFound(foundFull)
         }
     }

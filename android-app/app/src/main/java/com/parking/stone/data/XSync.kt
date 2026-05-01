@@ -18,8 +18,9 @@ class XSync(private val dao: ParkingDao) {
         val tenantId = SessionManager.tenantId
         val token = SessionManager.authToken ?: return@coroutineScope false
         
-        // Start Media Sync in parallel
+        // Start Media & Telemetry Sync in parallel
         launch { syncMedia(context) }
+        launch { syncTelemetry(context) }
 
         try {
             // 1. UPLOAD Local Unsynced
@@ -225,5 +226,39 @@ class XSync(private val dao: ParkingDao) {
         } catch (e: Exception) {
             Log.e("XSync", "Config sync failed", e)
         }
+    }
+
+    suspend fun syncTelemetry(context: android.content.Context): Boolean = withContext(Dispatchers.IO) {
+        val tenantId = SessionManager.tenantId
+        val token = SessionManager.authToken ?: return@withContext false
+        val db = AppDatabase.getDatabase(context)
+        
+        try {
+            val unsynced = db.telemetryDao().getUnsynced()
+            if (unsynced.isEmpty()) return@withContext true
+            
+            Log.d("XSync", "Syncing ${unsynced.size} telemetry events...")
+            val payload = unsynced.map { t ->
+                TelemetrySync(
+                    deviceId = t.deviceId,
+                    eventType = t.eventType,
+                    ocrTimeMs = t.ocrTimeMs,
+                    captureTimeMs = t.captureTimeMs,
+                    totalProcessTimeMs = t.totalProcessTimeMs,
+                    apiLatencyMs = t.apiLatencyMs,
+                    timestamp = t.timestamp
+                )
+            }
+            
+            val response = NetworkModule.api.syncTelemetry("Bearer $token", tenantId.toString(), payload)
+            if (response.success) {
+                db.telemetryDao().markAsSynced(unsynced.map { it.id })
+                db.telemetryDao().clearSynced() // Keep local db clean
+                return@withContext true
+            }
+        } catch (e: Exception) {
+            Log.e("XSync", "Telemetry sync failed: ${e.message}")
+        }
+        return@withContext false
     }
 }

@@ -66,6 +66,10 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
     var isRefundVoucher by remember { mutableStateOf(false) }
     var exitPhotoCaptured by remember { mutableStateOf(false) }
     
+    // Performance Tracking
+    var processStartTime by remember { mutableLongStateOf(0L) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val db = AppDatabase.getDatabase(context)
@@ -225,7 +229,9 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                         db.parkingDao().getActiveEntryByPlate(query, tenantId)
                                     }
 
+                                    if (entry != null) {
                                         foundEntry = entry
+                                        val now = System.currentTimeMillis()
                                         val calculation = com.parking.stone.data.PricingManager.calculate(entry, now)
                                         calculatedFee = if (entry.isPaid) 0.0 else calculation.first
                                         isRefundVoucher = calculation.second
@@ -412,6 +418,7 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                  return@Button
                              }
                              isProcessing = true
+                             processStartTime = System.currentTimeMillis()
                              scope.launch {
                                  var success = false
                                  if (isRefundVoucher) {
@@ -439,6 +446,12 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                  }
                                  
                                   if (success) {
+                                     val totalTime = (System.currentTimeMillis() - processStartTime).toInt()
+                                     com.parking.stone.data.TelemetryManager.logEvent(
+                                         context = context,
+                                         eventType = "EXIT_TOTAL",
+                                         totalProcessTime = totalTime
+                                     )
                                      if (!isRefundVoucher) {
                                          val updated = foundEntry!!.copy(
                                              isPaid = true, 
@@ -454,8 +467,8 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                                      }
                                      
                                      launch(Dispatchers.IO) { com.parking.stone.data.XSync(db.parkingDao()).syncTickets(context) }
-                                     foundEntry = null
                                      recentEntries = db.parkingDao().getActiveEntries(SessionManager.tenantId)
+                                     showSuccessDialog = true
                                  }
                                  isProcessing = false
                              }
@@ -470,6 +483,23 @@ fun ExitScreen(navController: NavController, initialPlate: String? = null) {
                 }
             }
         }
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showSuccessDialog = false
+                foundEntry = null
+            },
+            title = { Text("Saída Registrada") },
+            text = { Text("Veículo da placa ${foundEntry?.plate} liberado com sucesso!") },
+            confirmButton = {
+                Button(onClick = { 
+                    showSuccessDialog = false
+                    foundEntry = null
+                }) { Text("OK") }
+            }
+        )
     }
 }
 
