@@ -5,9 +5,9 @@ import { Download, Smartphone, ShieldCheck, Zap, RefreshCcw } from 'lucide-react
 import Link from 'next/link'
 
 export default function DownloadsPage() {
-    const currentVersion = "1.9.2"
+    const currentVersion = "2.0.0"
     const releaseDate = "30 de Abril, 2026"
-    const apkUrl = "/downloads/guardian-v1.9.2.apk"
+    const apkUrl = "/downloads/guardian-v2.0.0.apk"
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -94,11 +94,11 @@ export default function DownloadsPage() {
                     <h3 className="text-center text-sm font-black text-gray-500 uppercase tracking-widest">O que há de novo na v{currentVersion}</h3>
                     <ul className="space-y-4">
                         {[
-                            "Precificação Dinâmica por Turnos (Mudança automática por horário)",
-                            "Suporte a Tolerância Zero e Estorno Dinâmico (Sincronizado com o portal)",
-                            "Suporte a Multi-Login (Escolha de unidade no acesso)",
-                            "Nova função de Emissão de Cortesia para Gerentes",
-                            "Melhorias na estabilidade de sincronização offline"
+                            "Telemetria 360º: Monitoramento de performance OCR e hardware em tempo real",
+                            "Novo Log de Incidentes: Rastreamento proativo de lentidões no PDV",
+                            "Dashboard NOC 2.1: Visualização de tendências e saúde da rede",
+                            "Diálogo de Confirmação: Feedback visual aprimorado no fluxo de saída",
+                            "Melhorias críticas na estabilidade de sincronização de tickets"
                         ].map((note, i) => (
                             <li key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                 <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>
