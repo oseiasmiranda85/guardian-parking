@@ -5,9 +5,9 @@ import { Download, Smartphone, ShieldCheck, Zap, RefreshCcw } from 'lucide-react
 import Link from 'next/link'
 
 export default function DownloadsPage() {
-    const currentVersion = "2.0.4"
+    const currentVersion = "2.0.5"
     const releaseDate = "01 de Maio, 2026"
-    const apkUrl = "/downloads/guardian-v2.0.4.apk"
+    const apkUrl = "/downloads/guardian-v2.0.5.apk"
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
