@@ -32,6 +32,8 @@ fun DashboardScreen(navController: NavController) {
     val scope = rememberCoroutineScope()
     val user = SessionManager.currentUser
     
+    var isSyncing by remember { mutableStateOf(false) }
+    var pendingCount by remember { mutableStateOf(0) }
     var isBlocked by remember { mutableStateOf(false) }
     
     val context = LocalContext.current
@@ -167,6 +169,37 @@ fun DashboardScreen(navController: NavController) {
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
 
+                NavigationDrawerItem(
+                    label = { 
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Sincronizar Agora")
+                            if (pendingCount > 0) {
+                                Badge(containerColor = MaterialTheme.colorScheme.error) { 
+                                    Text("$pendingCount", color = Color.White, style = MaterialTheme.typography.labelSmall) 
+                                }
+                            }
+                        }
+                    },
+                    selected = false,
+                    onClick = { 
+                        scope.launch { 
+                            drawerState.close() 
+                            isSyncing = true
+                            try {
+                                val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+                                val repo = com.parking.stone.data.XSync(db.parkingDao())
+                                repo.syncTickets(context)
+                                repo.syncSessions()
+                                repo.syncConfig()
+                                pendingCount = repo.getPendingCount(SessionManager.tenantId, context)
+                            } catch(e: Exception) {}
+                            isSyncing = false
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Sync, null) },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+
                 if (SessionManager.hasPermission(UserRole.SUPERVISOR)) {
                     NavigationDrawerItem(
                         label = { Text("Cancelar Ticket") },
@@ -208,12 +241,31 @@ fun DashboardScreen(navController: NavController) {
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
 
+                if (pendingCount > 0) {
+                    Text(
+                        "Existem $pendingCount itens pendentes de sincronismo. Sincronize antes de sair.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                    )
+                }
+
                 if (!SessionManager.hasPermission(UserRole.MANAGER)) {
                     NavigationDrawerItem(
                         label = { Text("Sair do Turno (Manter Aberto)") },
                         selected = false,
                         onClick = { 
                             scope.launch { 
+                                if (pendingCount > 0) {
+                                    android.widget.Toast.makeText(context, "Sincronize os dados antes de sair!", android.widget.Toast.LENGTH_LONG).show()
+                                    isSyncing = true
+                                    val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+                                    val repo = com.parking.stone.data.XSync(db.parkingDao())
+                                    repo.syncTickets(context)
+                                    pendingCount = repo.getPendingCount(SessionManager.tenantId, context)
+                                    isSyncing = false
+                                    if (pendingCount > 0) return@launch
+                                }
                                 drawerState.close() 
                                 SessionManager.logout(context)
                                 navController.navigate(Routes.LOGIN) { popUpTo(0) }
@@ -230,9 +282,21 @@ fun DashboardScreen(navController: NavController) {
                     label = { Text("Sair / Logout") },
                     selected = false,
                     onClick = { 
-                        SessionManager.logout(context)
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(0)
+                        scope.launch {
+                            if (pendingCount > 0) {
+                                android.widget.Toast.makeText(context, "Sincronize os dados antes de fazer logout!", android.widget.Toast.LENGTH_LONG).show()
+                                isSyncing = true
+                                val db = com.parking.stone.data.AppDatabase.getDatabase(context)
+                                val repo = com.parking.stone.data.XSync(db.parkingDao())
+                                repo.syncTickets(context)
+                                pendingCount = repo.getPendingCount(SessionManager.tenantId, context)
+                                isSyncing = false
+                                if (pendingCount > 0) return@launch
+                            }
+                            SessionManager.logout(context)
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(0)
+                            }
                         }
                     },
                     icon = { Icon(Icons.Default.Logout, null) },
@@ -310,8 +374,12 @@ fun DashboardScreen(navController: NavController) {
                                      SessionManager.tenantId
                                  )
                                  val stats = db.parkingDao().getPaymentStats(opIdStr, session.startTime, SessionManager.tenantId)
-                                 totalCollected = stats.sumOf { it.total }
+                              totalCollected = stats.sumOf { it.total }
                              }
+                             
+                             // Update Pending Count
+                             val repo = com.parking.stone.data.XSync(db.parkingDao())
+                             pendingCount = repo.getPendingCount(SessionManager.tenantId, context)
                          }
                          kotlinx.coroutines.delay(5000) // Refresh every 5s
                     }
@@ -367,6 +435,12 @@ fun DashboardScreen(navController: NavController) {
                 }
             }
         }
+
+        com.parking.stone.ui.components.SyncProgressDialog(
+            isSyncing = isSyncing,
+            pendingCount = pendingCount,
+            onDismiss = { isSyncing = false }
+        )
     }
 }
 

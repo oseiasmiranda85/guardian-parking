@@ -653,6 +653,14 @@ private fun saveAccreditedEntry(context: android.content.Context, scope: kotlinx
     }
 }
 
+private fun optimizeBitmap(bitmap: android.graphics.Bitmap): android.graphics.Bitmap {
+    val maxWidth = 1024
+    if (bitmap.width <= maxWidth) return bitmap
+    val aspectRatio = bitmap.height.toFloat() / bitmap.width.toFloat()
+    val targetHeight = (maxWidth * aspectRatio).toInt()
+    return android.graphics.Bitmap.createScaledBitmap(bitmap, maxWidth, targetHeight, true)
+}
+
 private fun saveEntryWithPhoto(
     context: android.content.Context,
     scope: kotlinx.coroutines.CoroutineScope,
@@ -727,8 +735,9 @@ private fun saveEntryWithPhoto(
     if (bitmap != null) {
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
+                val optimized = optimizeBitmap(bitmap)
                 val out = java.io.FileOutputStream(photoFile)
-                bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out)
+                optimized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out)
                 out.flush()
                 out.close()
                 saveAndPrint(photoFile.absolutePath)

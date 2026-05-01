@@ -25,6 +25,9 @@ interface TelemetryDao {
     
     @Query("DELETE FROM telemetry WHERE synced = 1")
     suspend fun clearSynced()
+
+    @Query("SELECT COUNT(*) FROM telemetry WHERE synced = 0")
+    suspend fun getUnsyncedCount(): Int
 }
 
 @Dao
@@ -96,6 +99,12 @@ interface ParkingDao {
 
     @Query("UPDATE parking_entries SET photoPath = :path WHERE id = :id")
     suspend fun updatePhotoPath(id: Long, path: String?)
+
+    @Query("SELECT COUNT(*) FROM parking_entries WHERE isSynced = 0 AND tenantId = :tenantId")
+    suspend fun getUnsyncedCount(tenantId: Int): Int
+
+    @Query("SELECT COUNT(*) FROM parking_entries WHERE tenantId = :tenantId AND photoPath IS NOT NULL AND photoUrl IS NULL")
+    suspend fun getPendingPhotosCount(tenantId: Int): Int
 }
 
 data class PaymentStat(val paymentMethod: String?, val total: Double, val count: Int)

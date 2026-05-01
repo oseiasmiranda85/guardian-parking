@@ -13,6 +13,13 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class XSync(private val dao: ParkingDao) {
+    
+    suspend fun getPendingCount(tenantId: Int, context: android.content.Context): Int = withContext(Dispatchers.IO) {
+        val tickets = dao.getUnsyncedCount(tenantId)
+        val photos = dao.getPendingPhotosCount(tenantId)
+        val telemetry = AppDatabase.getDatabase(context).telemetryDao().getUnsyncedCount()
+        tickets + photos + telemetry
+    }
 
     suspend fun syncTickets(context: android.content.Context): Boolean = coroutineScope {
         val tenantId = SessionManager.tenantId
@@ -191,7 +198,18 @@ class XSync(private val dao: ParkingDao) {
                         // The server saves as [uuid].jpg now
                         val serverPath = "/uploads/$tenantId/${entry.uuid}.jpg"
                         dao.updatePhotoUrl(entry.id, serverPath)
-                        Log.d("XSync", "Photo uploaded and linked via UUID: $serverPath")
+                        
+                        // NEW: Delete local file to save space
+                        try {
+                            if (file.exists()) {
+                                file.delete()
+                                dao.updatePhotoPath(entry.id, null)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("XSync", "Failed to delete local file: ${e.message}")
+                        }
+                        
+                        Log.d("XSync", "Photo uploaded and local file cleaned: $serverPath")
                     }
                 } else {
                     // File deleted or missing? Mark as null to avoid retry
